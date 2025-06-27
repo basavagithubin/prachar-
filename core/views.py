@@ -41,109 +41,7 @@ from .models import (
 from .choices import FOLLOW_UP_STATUS_CHOICES
 
 
-# @login_required
-# def dashboard(request):
-#     today = timezone.now().date()
 
-#     # Reset attendance, follow-up, and status only once per day
-#     tracker, created = AttendanceResetTracker.objects.get_or_create(id=1, defaults={'last_reset_date': today})
-#     if tracker.last_reset_date != today:
-#         # Reset all flags on a new day (preserving history)
-#         Candidate.objects.update(
-#             attended=False,
-#             followed_up=False,
-#             follow_up_status='',
-#             follow_up_status_date=None
-#         )
-
-#         # Delete today's FollowUpSession and Attendance to avoid duplication
-#         FollowUpSession.objects.filter(date=today).delete()
-#         Attendance.objects.filter(date=today).delete()
-
-#         # Update tracker
-#         tracker.last_reset_date = today
-#         tracker.save()
-
-#     query = request.GET.get('search', '')
-#     candidates = Candidate.objects.filter(deleted=False).select_related('assigned_volunteer')
-
-#     if query:
-#         candidates = candidates.filter(
-#             Q(name__icontains=query) |
-#             Q(phone__icontains=query) |
-#             Q(assigned_volunteer__name__icontains=query)
-#         )
-
-#     volunteers = Volunteer.objects.all()
-
-#     if request.method == 'POST':
-#         if 'volunteer_id' in request.POST:
-#             candidate = get_object_or_404(Candidate, id=request.POST['candidate_id'])
-#             volunteer = get_object_or_404(Volunteer, id=request.POST['volunteer_id'])
-#             candidate.assigned_volunteer = volunteer
-#             candidate.save()
-#             messages.success(request, f"{candidate.name} assigned to {volunteer.name}.")
-
-#         elif 'attendance_candidate_id' in request.POST:
-#             candidate = get_object_or_404(Candidate, id=request.POST['attendance_candidate_id'])
-#             Attendance.objects.get_or_create(candidate=candidate, date=today)
-#             candidate.attended = True
-#             candidate.save()
-#             messages.success(request, f"Marked attendance for {candidate.name}.")
-
-#         elif 'follow_up_candidate_id' in request.POST:
-#             candidate = get_object_or_404(Candidate, id=request.POST['follow_up_candidate_id'])
-#             candidate.followed_up = True
-#             candidate.save()
-#             messages.success(request, f"Marked follow-up for {candidate.name}.")
-
-#         elif 'follow_up_status_candidate_id' in request.POST:
-#             candidate = get_object_or_404(Candidate, id=request.POST['follow_up_status_candidate_id'])
-#             status = request.POST.get('follow_up_status', '').strip()
-#             date_str = request.POST.get('follow_up_status_date', '')
-#             try:
-#                 session_date = date.fromisoformat(date_str) if date_str else today
-#             except ValueError:
-#                 session_date = today
-#             candidate.follow_up_status = status
-#             candidate.follow_up_status_date = session_date
-#             candidate.save()
-
-#             # Create comment log for status update
-#             CandidateComment.objects.create(
-#                 candidate=candidate,
-#                 comment=f"Status updated to '{status}' for follow-up on {session_date.strftime('%d %b %Y')}."
-#             )
-#             messages.success(request, f"Updated follow-up status for {candidate.name}.")
-
-#         elif 'level_candidate_id' in request.POST:
-#             candidate_id = request.POST.get('level_candidate_id')
-#             level = request.POST.get('level')
-#             if candidate_id and level:
-#                 try:
-#                     candidate = Candidate.objects.get(id=candidate_id)
-#                     candidate.level = level
-#                     candidate.save()
-#                     messages.success(request, f"Level updated for {candidate.name}.")
-#                 except Candidate.DoesNotExist:
-#                     messages.error(request, "Candidate not found.")
-
-#         elif 'delete_candidate_id' in request.POST:
-#             candidate = get_object_or_404(Candidate, id=request.POST['delete_candidate_id'])
-#             candidate.deleted = True
-#             candidate.save()
-#             messages.warning(request, f"{candidate.name} marked as deleted.")
-
-#         return redirect('dashboard')
-
-#     context = {
-#         'candidates': candidates,
-#         'volunteers': volunteers,
-#         'today': today,
-#         'follow_up_status_choices': FOLLOW_UP_STATUS_CHOICES,
-        
-#     }
-#     return render(request, 'core/dashboard.html', context)
 from django.core.paginator import Paginator
 from datetime import date
 
@@ -214,10 +112,16 @@ def dashboard(request):
             candidate.follow_up_status = status
             candidate.follow_up_status_date = session_date
             candidate.save()
-            CandidateComment.objects.create(
+            Comment.objects.create(
                 candidate=candidate,
-                comment=f"Status updated to '{status}' for follow-up on {session_date.strftime('%d %b %Y')}."
+                volunteer=request.user,
+                content=f"Status updated to '{status}' for follow-up on {session_date.strftime('%d %b %Y')}."
             )
+
+            # CandidateComment.objects.create(
+            #     candidate=candidate,
+            #     comment=f"Status updated to '{status}' for follow-up on {session_date.strftime('%d %b %Y')}."
+            # )
             messages.success(request, f"Updated follow-up status for {candidate.name}.")
 
         elif 'level_candidate_id' in request.POST:
@@ -265,16 +169,16 @@ from collections import defaultdict
 from django.shortcuts import render
 from .models import CandidateComment
 
-@login_required
-def comments_view(request):
-    comments = CandidateComment.objects.select_related('candidate__assigned_volunteer').order_by('-created_at')
+# @login_required
+# def comments_view(request):
+#     comments = CandidateComment.objects.select_related('candidate__assigned_volunteer').order_by('-created_at')
 
-    grouped_comments = defaultdict(list)
-    for comment in comments:
-        comment_date = comment.created_at.strftime('%d %b %Y')
-        grouped_comments[comment_date].append(comment)
+#     grouped_comments = defaultdict(list)
+#     for comment in comments:
+#         comment_date = comment.created_at.strftime('%d %b %Y')
+#         grouped_comments[comment_date].append(comment)
 
-    return render(request, 'core/comments.html', {'grouped_comments': dict(grouped_comments)})
+#     return render(request, 'core/comments.html', {'grouped_comments': dict(grouped_comments)})
 
 
 
@@ -390,17 +294,7 @@ def attendance_list(request):
     }
     return render(request, 'core/attendance_list.html', context)
 
-# def attendance_list(request):
-#     attendance_records = Attendance.objects.select_related('candidate').order_by('-date')
 
-#     grouped_attendance = defaultdict(list)
-#     for record in attendance_records:
-#         grouped_attendance[record.date].append(record)
-
-#     context = {
-#         'grouped_attendance': dict(grouped_attendance),
-#     }
-#     return render(request, 'core/attendance_list.html', context)
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -506,391 +400,8 @@ def follow_up_report(request):
     }
 
     return render(request, 'core/follow_up_report.html', context)
-
-# @login_required
-# def follow_up_report(request):
-#     today = date.today()
-#     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
-
-#     # ✅ Handle reset historical sessions
-#     if request.method == 'POST' and request.POST.get('reset_history') == '1':
-#         FollowUpSession.objects.exclude(date=today).delete()
-#         messages.success(request, "Historical sessions cleared successfully.")
-#         return redirect('follow_up_report')
-
-#     # ✅ Handle speaker name input
-#     if request.method == 'POST' and 'speaker_name' in request.POST:
-#         speaker_name = request.POST.get('speaker_name')
-#         if speaker_name:
-#             current_session.speaker_name = speaker_name
-#             current_session.save()
-#             messages.success(request, "Speaker name updated successfully.")
-#             return redirect('follow_up_report')  # Refresh to show in historical too
-
-#     # ✅ Update session data
-#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
-#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
-#     current_session.new.set(Candidate.objects.filter(registration_date=today))
-#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
-
-#     # ✅ Re-fetch to include updates
-#     current_session.refresh_from_db()
-
-#     status_display_count = {
-#         'Followed Up': current_session.followed_up.count(),
-#         'Attended': current_session.attended.count(),
-#         'New': current_session.new.count(),
-#         'Not Attended': current_session.not_attended.count()
-#     }
-
-#     status_candidate_map = {
-#         'Followed Up': current_session.followed_up.all(),
-#         'Attended': current_session.attended.all(),
-#         'New': current_session.new.all(),
-#         'Not Attended': current_session.not_attended.all()
-#     }
-
-#     current_session_candidates = {
-#         'followed_up': current_session.followed_up.all(),
-#         'attended': current_session.attended.all(),
-#         'new': current_session.new.all(),
-#         'not_attended': current_session.not_attended.all()
-#     }
-
-#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
-#     for session in sessions:
-#         session.candidate_map = {
-#             'followed_up': session.followed_up.all(),
-#             'attended': session.attended.all(),
-#             'new': session.new.all(),
-#             'not_attended': session.not_attended.all()
-#         }
-
-#     context = {
-#         'today': today,
-#         'status_display_count': status_display_count,
-#         'status_candidate_map': status_candidate_map,
-#         'current_session': current_session,
-#         'current_session_candidates': current_session_candidates,
-#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
-#         'sessions': sessions,
-#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
-#     }
-
-#     return render(request, 'core/follow_up_report.html', context)
-
-# @login_required
-# def follow_up_report(request):
-#     today = date.today()
-#     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
-
-#     # ✅ Handle reset historical sessions
-#     if request.method == 'POST' and request.POST.get('reset_history') == '1':
-#         FollowUpSession.objects.exclude(date=today).delete()
-#         messages.success(request, "Historical sessions cleared successfully.")
-#         return redirect('follow_up_report')
-
-#     # ✅ Handle speaker name input
-#     if request.method == 'POST' and 'speaker_name' in request.POST:
-#         speaker_name = request.POST.get('speaker_name')
-#         if speaker_name:
-#             current_session.speaker_name = speaker_name
-#             current_session.save()
-
-#     # ✅ Update session data
-#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
-#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
-#     current_session.new.set(Candidate.objects.filter(registration_date=today))
-#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
-
-#     current_session = FollowUpSession.objects.get(date=today)
-
-#     status_display_count = {
-#         'Followed Up': current_session.followed_up.count(),
-#         'Attended': current_session.attended.count(),
-#         'New': current_session.new.count(),
-#         'Not Attended': current_session.not_attended.count()
-#     }
-
-#     status_candidate_map = {
-#         'Followed Up': current_session.followed_up.all(),
-#         'Attended': current_session.attended.all(),
-#         'New': current_session.new.all(),
-#         'Not Attended': current_session.not_attended.all()
-#     }
-
-#     current_session_candidates = {
-#         'followed_up': current_session.followed_up.all(),
-#         'attended': current_session.attended.all(),
-#         'new': current_session.new.all(),
-#         'not_attended': current_session.not_attended.all()
-#     }
-
-#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
-#     for session in sessions:
-#         session.candidate_map = {
-#             'followed_up': session.followed_up.all(),
-#             'attended': session.attended.all(),
-#             'new': session.new.all(),
-#             'not_attended': session.not_attended.all()
-#         }
-
-#     context = {
-#         'today': today,
-#         'status_display_count': status_display_count,
-#         'status_candidate_map': status_candidate_map,
-#         'current_session': current_session,
-#         'current_session_candidates': current_session_candidates,
-#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
-#         'sessions': sessions,
-#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
-#     }
-
-#     return render(request, 'core/follow_up_report.html', context)
-
-# @login_required
-# def follow_up_report(request):
-#     today = date.today()
-#     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
-
-#     # ✅ Handle speaker name input
-#     if request.method == 'POST':
-#         speaker_name = request.POST.get('speaker_name')
-#         if speaker_name:
-#             current_session.speaker_name = speaker_name
-#             current_session.save()
-
-#     # ✅ Set today's candidates
-#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
-#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
-#     current_session.new.set(Candidate.objects.filter(registration_date=today))
-#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
-
-#     # ✅ Refresh the current_session from DB to get the latest speaker name
-#     current_session = FollowUpSession.objects.get(date=today)
-
-#     status_display_count = {
-#         'Followed Up': current_session.followed_up.count(),
-#         'Attended': current_session.attended.count(),
-#         'New': current_session.new.count(),
-#         'Not Attended': current_session.not_attended.count()
-#     }
-
-#     status_candidate_map = {
-#         'Followed Up': current_session.followed_up.all(),
-#         'Attended': current_session.attended.all(),
-#         'New': current_session.new.all(),
-#         'Not Attended': current_session.not_attended.all()
-#     }
-
-#     current_session_candidates = {
-#         'followed_up': current_session.followed_up.all(),
-#         'attended': current_session.attended.all(),
-#         'new': current_session.new.all(),
-#         'not_attended': current_session.not_attended.all()
-#     }
-
-#     # ✅ Fetch past sessions with candidates + speaker_name
-#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
-#     for session in sessions:
-#         session.candidate_map = {
-#             'followed_up': session.followed_up.all(),
-#             'attended': session.attended.all(),
-#             'new': session.new.all(),
-#             'not_attended': session.not_attended.all()
-#         }
-
-#     context = {
-#         'today': today,
-#         'status_display_count': status_display_count,
-#         'status_candidate_map': status_candidate_map,
-#         'current_session': current_session,
-#         'current_session_candidates': current_session_candidates,
-#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
-#         'sessions': sessions,
-#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
-#     }
-
-#     return render(request, 'core/follow_up_report.html', context)
-
-# @login_required
-# def follow_up_report(request):
-#     today = date.today()
-#     current_session, created = FollowUpSession.objects.get_or_create(date=today)
-
-#     if request.method == 'POST':
-#         speaker_name = request.POST.get('speaker_name')
-#         if speaker_name:
-#             current_session.speaker_name = speaker_name
-#             current_session.save()
-#         return redirect('follow_up_report')  # Ensure data is refreshed and visible immediately
-
-#     # Set candidate lists for the current session
-#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
-#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
-#     current_session.new.set(Candidate.objects.filter(registration_date=today))
-#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
-
-#     # Reload current_session to reflect any changes (important!)
-#     current_session = FollowUpSession.objects.get(date=today)
-
-#     status_display_count = {
-#         'Followed Up': current_session.followed_up.count(),
-#         'Attended': current_session.attended.count(),
-#         'New': current_session.new.count(),
-#         'Not Attended': current_session.not_attended.count()
-#     }
-
-#     status_candidate_map = {
-#         'Followed Up': current_session.followed_up.all(),
-#         'Attended': current_session.attended.all(),
-#         'New': current_session.new.all(),
-#         'Not Attended': current_session.not_attended.all()
-#     }
-
-#     current_session_candidates = {
-#         'followed_up': current_session.followed_up.all(),
-#         'attended': current_session.attended.all(),
-#         'new': current_session.new.all(),
-#         'not_attended': current_session.not_attended.all()
-#     }
-
-#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
-#     for session in sessions:
-#         session.candidate_map = {
-#             'followed_up': session.followed_up.all(),
-#             'attended': session.attended.all(),
-#             'new': session.new.all(),
-#             'not_attended': session.not_attended.all(),
-#         }
-
-#     context = {
-#         'today': today,
-#         'status_display_count': status_display_count,
-#         'status_candidate_map': status_candidate_map,
-#         'current_session': current_session,
-#         'current_session_candidates': current_session_candidates,
-#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
-#         'sessions': sessions,
-#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
-#     }
-#     return render(request, 'core/follow_up_report.html', context)
-
-
-# @login_required  fist remove this 
-# def follow_up_report(request):
-#     today = date.today()
-#     current_session, created = FollowUpSession.objects.get_or_create(date=today)
-
-#     if request.method == 'POST':
-#         speaker_name = request.POST.get('speaker_name')
-#         if speaker_name:
-#             current_session.speaker_name = speaker_name
-#             current_session.save()
-#         return redirect('follow_up_report')
-
-#     # Update current session candidate sets
-#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
-#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
-#     current_session.new.set(Candidate.objects.filter(registration_date=today))
-#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
-
-#     status_display_count = {
-#         'Followed Up': current_session.followed_up.count(),
-#         'Attended': current_session.attended.count(),
-#         'New': current_session.new.count(),
-#         'Not Attended': current_session.not_attended.count()
-#     }
-
-#     status_candidate_map = {
-#         'Followed Up': current_session.followed_up.all(),
-#         'Attended': current_session.attended.all(),
-#         'New': current_session.new.all(),
-#         'Not Attended': current_session.not_attended.all()
-#     }
-
-#     current_session_candidates = {
-#         'followed_up': current_session.followed_up.all(),
-#         'attended': current_session.attended.all(),
-#         'new': current_session.new.all(),
-#         'not_attended': current_session.not_attended.all()
-#     }
-
-#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
-#     for session in sessions:
-#         session.candidate_map = {
-#             'followed_up': session.followed_up.all(),
-#             'attended': session.attended.all(),
-#             'new': session.new.all(),
-#             'not_attended': session.not_attended.all(),
-#         }
-
-#     context = {
-#         'today': today,
-#         'status_display_count': status_display_count,
-#         'status_candidate_map': status_candidate_map,
-#         'current_session': current_session,
-#         'current_session_candidates': current_session_candidates,
-#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
-#         'sessions': sessions,
-#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
-#     }
-#     return render(request, 'core/follow_up_report.html', context)
-
-# @login_required
-# def follow_up_report(request):
-#     today = date.today()
-#     current_session, created = FollowUpSession.objects.get_or_create(date=today)
-
-#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
-#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
-#     current_session.new.set(Candidate.objects.filter(registration_date=today))
-#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
-
-#     status_display_count = {
-#         'Followed Up': current_session.followed_up.count(),
-#         'Attended': current_session.attended.count(),
-#         'New': current_session.new.count(),
-#         'Not Attended': current_session.not_attended.count()
-#     }
-
-#     status_candidate_map = {
-#         'Followed Up': current_session.followed_up.all(),
-#         'Attended': current_session.attended.all(),
-#         'New': current_session.new.all(),
-#         'Not Attended': current_session.not_attended.all()
-#     }
-
-#     current_session_candidates = {
-#         'followed_up': current_session.followed_up.all(),
-#         'attended': current_session.attended.all(),
-#         'new': current_session.new.all(),
-#         'not_attended': current_session.not_attended.all()
-#     }
-
-#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
-#     for session in sessions:
-#         session.candidate_map = {
-#             'followed_up': session.followed_up.all(),
-#             'attended': session.attended.all(),
-#             'new': session.new.all(),
-#             'not_attended': session.not_attended.all(),
-#         }
-
-#     context = {
-#         'today': today,
-#         'status_display_count': status_display_count,
-#         'status_candidate_map': status_candidate_map,
-#         'current_session': current_session,
-#         'current_session_candidates': current_session_candidates,
-#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
-#         'sessions': sessions,
-#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
-#     }
-#     return render(request, 'core/follow_up_report.html', context)
-
-
-
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 @login_required
 def deleted_candidates(request):
     deleted = Candidate.objects.filter(deleted=True)
@@ -1165,11 +676,17 @@ from collections import defaultdict
 from django.shortcuts import render
 from .models import Comment
 
+
+from collections import defaultdict
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Comment  # ensure this is imported
+
 @login_required
 def comments_view(request):
     all_comments = Comment.objects.select_related('candidate', 'candidate__assigned_volunteer').order_by('-timestamp')
 
-    # Group by date
+    # Group comments by date
     grouped_comments = defaultdict(list)
     for comment in all_comments:
         comment_date = comment.timestamp.date()
@@ -1178,5 +695,19 @@ def comments_view(request):
     return render(request, 'core/comments.html', {
         'grouped_comments': dict(grouped_comments),
     })
+
+# @login_required
+# def comments_view(request):
+#     all_comments = Comment.objects.select_related('candidate', 'candidate__assigned_volunteer').order_by('-timestamp')
+
+#     # Group by date
+#     grouped_comments = defaultdict(list)
+#     for comment in all_comments:
+#         comment_date = comment.timestamp.date()
+#         grouped_comments[comment_date].append(comment)
+
+#     return render(request, 'core/comments.html', {
+#         'grouped_comments': dict(grouped_comments),
+#     })
 
 
