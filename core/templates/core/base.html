@@ -1,0 +1,373 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Candidate Management</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #F6B53B;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="bg-yellow-50 text-gray-900 font-sans leading-relaxed">
+
+{% if user.is_authenticated %}
+  <!-- 🕉️ Authenticated Navbar -->
+  <header class="bg-orange-700 shadow-lg sticky top-0 z-50">
+    <nav class="container mx-auto flex items-center justify-between px-6 py-4">
+      <a href="{% url 'dashboard' %}" class="text-3xl font-bold font-serif text-yellow-100 tracking-wide drop-shadow">
+        🚢Prachar
+      </a>
+
+      <!-- Desktop Menu -->
+      <ul class="hidden md:flex space-x-6 text-sm font-medium items-center">
+        <li><a href="{% url 'dashboard' %}" class="navlink {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+        <li><a href="{% url 'register_candidate' %}" class="navlink {% if request.resolver_match.url_name == 'register_candidate' %}active{% endif %}">Register</a></li>
+        <li><a href="{% url 'manage_volunteers' %}" class="navlink {% if request.resolver_match.url_name == 'manage_volunteers' %}active{% endif %}">Volunteers</a></li>
+        <li><a href="{% url 'attendance_list' %}" class="navlink {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}">Attendance List</a></li>
+        <li><a href="{% url 'follow_up_report' %}" class="navlink {% if request.resolver_match.url_name == 'follow_up_report' %}active{% endif %}">Follow-Up Report</a></li>
+        <li><a href="{% url 'compose_email' %}" class="navlink {% if request.resolver_match.url_name == 'compose_email' %}active{% endif %}">Compose Email</a></li>
+        <li><a href="{% url 'compose_sms' %}" class="navlink {% if request.resolver_match.url_name == 'compose_sms' %}active{% endif %}">Compose SMS</a></li>
+        <li><a href="{% url 'comments' %}" class="navlink {% if request.resolver_match.url_name == 'comments' %}active{% endif %}">Comments</a></li>
+        <li>
+          <form action="{% url 'logout' %}" method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="ml-4 px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition shadow text-sm font-semibold">
+              Logout
+            </button>
+          </form>
+        </li>
+      </ul>
+
+      <!-- Mobile Menu Button -->
+      <div class="md:hidden">
+        <button id="mobile-menu-button" class="text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-300 rounded-md">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-orange-700 shadow-lg">
+      <ul class="flex flex-col p-4 space-y-2">
+        <li><a href="{% url 'dashboard' %}" class="mobilelink {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+        <li><a href="{% url 'register_candidate' %}" class="mobilelink {% if request.resolver_match.url_name == 'register_candidate' %}active{% endif %}">Register</a></li>
+        <li><a href="{% url 'manage_volunteers' %}" class="mobilelink {% if request.resolver_match.url_name == 'manage_volunteers' %}active{% endif %}">Volunteers</a></li>
+        <li><a href="{% url 'attendance_list' %}" class="mobilelink {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}">Attendance List</a></li>
+        <li><a href="{% url 'follow_up_report' %}" class="mobilelink {% if request.resolver_match.url_name == 'follow_up_report' %}active{% endif %}">Follow-Up Report</a></li>
+        <li><a href="{% url 'compose_email' %}" class="mobilelink {% if request.resolver_match.url_name == 'compose_email' %}active{% endif %}">Compose Email</a></li>
+        <li><a href="{% url 'compose_sms' %}" class="mobilelink {% if request.resolver_match.url_name == 'compose_sms' %}active{% endif %}">Compose SMS</a></li>
+        <li><a href="{% url 'comments' %}" class="mobilelink {% if request.resolver_match.url_name == 'comments' %}active{% endif %}">Comments</a></li>
+        <li>
+          <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="w-full px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition font-semibold">
+              Logout
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </header>
+{% else %}
+  <!-- Guest Navbar -->
+  <header class="bg-orange-700 shadow-md sticky top-0 z-50">
+    <nav class="container mx-auto flex items-center justify-end px-6 py-4">
+      <a href="{% url 'login' %}" class="text-yellow-100 font-semibold hover:underline">
+        Login
+      </a>
+    </nav>
+  </header>
+{% endif %}
+
+<main class="container mx-auto px-6 py-8 min-h-[calc(100vh-80px)]">
+  {% block content %}{% endblock %}
+</main>
+
+<script>
+  const menuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (menuButton) {
+    menuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+</script>
+
+<!-- Extra Tailwind Utility Classes -->
+<style>
+  .navlink {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    transition: all 0.2s;
+    color: #FFFBEB;
+  }
+  .navlink:hover {
+    background-color: #EA580C;
+    color: #ffffff;
+  }
+  .navlink.active {
+    background-color: #FDE68A;
+    color: #7C2D12;
+    font-weight: bold;
+  }
+
+  .mobilelink {
+    display: block;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    color: #FFFBEB;
+    transition: all 0.2s;
+  }
+  .mobilelink:hover {
+    background-color: #EA580C;
+    color: #ffffff;
+  }
+  .mobilelink.active {
+    background-color: #FCD34D;
+    color: #7C2D12;
+    font-weight: bold;
+  }
+</style>
+
+</body>
+</html>
+{% comment %} {% load static %}
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Candidate Management</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color:rgb(246, 181, 59);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans leading-relaxed">
+
+  {% if user.is_authenticated %}
+  <!-- Navbar with blue background -->
+  <header class="bg-blue-700 shadow-md sticky top-0 z-50">
+    <nav class="container mx-auto flex items-center justify-between px-6 py-4">
+      <a href="{% url 'dashboard' %}" class="text-2xl font-extrabold text-white tracking-wide">
+        🚀Prachar 
+      </a>
+
+      <!-- Desktop Menu -->
+      <ul class="hidden md:flex space-x-8 text-sm font-medium items-center">
+        <li>
+          <a href="{% url 'dashboard' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'dashboard' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Dashboard
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'register_candidate' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'register_candidate' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Register
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'manage_volunteers' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'manage_volunteers' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Volunteers
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'attendance_list' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'attendance_list' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Attendance List
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'follow_up_report' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'follow_up_report' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Follow-Up Report
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'compose_email' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'compose_email' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Compose Email
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'compose_sms' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'compose_sms' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Compose SMS
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'comments' %}" 
+             class="px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'comments' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Comments
+          </a>
+        </li>
+        <li>
+          <form action="{% url 'logout' %}" method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="ml-6 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition shadow-sm text-sm font-semibold">
+              Logout
+            </button>
+          </form>
+        </li>
+      </ul>
+
+      <!-- Mobile Menu Button -->
+      <div class="md:hidden">
+        <button id="mobile-menu-button" aria-label="Toggle Menu" class="text-white focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-md">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-blue-700 shadow-lg">
+      <ul class="flex flex-col p-4 space-y-2">
+        <li>
+          <a href="{% url 'dashboard' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'dashboard' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Dashboard
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'register_candidate' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'register_candidate' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Register
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'manage_volunteers' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'manage_volunteers' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Volunteers
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'attendance_list' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'attendance_list' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Attendance List
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'follow_up_report' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'follow_up_report' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Follow-Up Report
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'compose_email' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'compose_email' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Compose Email
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'compose_sms' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'compose_sms' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Compose SMS
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'comments' %}" 
+             class="block px-3 py-2 rounded-md transition
+                    {% if request.resolver_match.url_name == 'comments' %} bg-blue-900 text-white font-semibold
+                    {% else %} text-blue-200 hover:bg-blue-800 hover:text-white {% endif %}">
+            Comments
+          </a>
+        </li>
+        <li>
+          <form action="{% url 'logout' %}" method="post" class="block">
+            {% csrf_token %}
+            <button type="submit" class="w-full px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition font-semibold">
+              Logout
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </header>
+  {% else %}
+  <!-- Optional: Navbar for anonymous users -->
+  <header class="bg-blue-700 shadow-md sticky top-0 z-50">
+    <nav class="container mx-auto flex items-center justify-end px-6 py-4">
+      <a href="{% url 'login' %}" class="text-white font-semibold hover:underline">
+        Login
+      </a>
+    </nav>
+  </header>
+  {% endif %}
+
+  <main class="container mx-auto px-6 py-8 min-h-[calc(100vh-80px)]">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    const menuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuButton?.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  </script>
+
+</body>
+</html> {% endcomment %}

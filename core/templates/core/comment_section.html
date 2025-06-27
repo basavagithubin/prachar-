@@ -1,0 +1,41 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-md rounded-lg">
+  <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Comments</h2>
+
+  <!-- Comment Form -->
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          {{ field.label }}
+        </label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-red-500 text-xs mt-1">{{ field.errors|striptags }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold">
+      Add Comment
+    </button>
+  </form>
+
+  <!-- Comments List -->
+  <div class="mt-8">
+    <h3 class="text-xl font-semibold mb-4 text-gray-700">All Comments</h3>
+    <ul class="space-y-3">
+      {% for comment in comments %}
+        <li class="p-4 bg-gray-100 rounded-lg shadow-sm">
+          <p class="text-gray-800">{{ comment.content }}</p>
+          <p class="text-sm text-gray-500 mt-1">— {{ comment.volunteer.username }}</p>
+        </li>
+      {% empty %}
+        <li class="text-gray-500">No comments yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

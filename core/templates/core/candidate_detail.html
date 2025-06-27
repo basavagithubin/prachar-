@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10">
+
+    <!-- Page Header -->
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Candidate Profile</h2>
+            <p class="text-sm text-gray-500">Detailed view of candidate's information and engagement status.</p>
+        </div>
+        <a href="{% url 'edit_candidate' candidate.id %}"
+           class="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium text-sm px-4 py-2 rounded-md shadow">
+            ✏️ Edit Profile
+        </a>
+    </div>
+
+    <!-- Candidate Card -->
+    <div class="bg-white border border-gray-200 rounded-lg shadow p-6 space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-gray-700 text-sm md:text-base">
+
+            <div>
+                <span class="block font-semibold text-gray-600">Full Name</span>
+                <p>{{ candidate.name }}</p>
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Email Address</span>
+                <p>{{ candidate.email }}</p>
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Phone Number</span>
+                <p>{{ candidate.phone }}</p>
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Mother Tongue</span>
+                <p>{{ candidate.mother_tongue }}</p>
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Registration Date</span>
+                <p>{{ candidate.registration_date|date:"M d, Y" }}</p>
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Assigned Volunteer</span>
+                {% if candidate.assigned_volunteer %}
+                    <p>{{ candidate.assigned_volunteer.name }}</p>
+                {% else %}
+                    <p class="italic text-gray-400">Not Assigned</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Attended</span>
+                {% if candidate.attended %}
+                    <span class="inline-block text-green-700 bg-green-100 px-2 py-1 rounded-full text-sm font-medium">✔ Yes</span>
+                {% else %}
+                    <span class="inline-block text-red-700 bg-red-100 px-2 py-1 rounded-full text-sm font-medium">✘ No</span>
+                {% endif %}
+            </div>
+
+            <div>
+                <span class="block font-semibold text-gray-600">Followed Up</span>
+                {% if candidate.followed_up %}
+                    <span class="inline-block text-blue-700 bg-blue-100 px-2 py-1 rounded-full text-sm font-medium">✔ Yes</span>
+                {% else %}
+                    <span class="inline-block text-red-700 bg-red-100 px-2 py-1 rounded-full text-sm font-medium">✘ No</span>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-10 flex justify-end">
+        <a href="{% url 'dashboard' %}"
+           class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2 rounded-md shadow transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+

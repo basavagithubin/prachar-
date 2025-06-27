@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mx-auto max-w-3xl px-4 py-12">
+  <!-- Page Heading -->
+  <header class="mb-10">
+    <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Edit Candidate</h1>
+    <p class="mt-2 text-gray-600">Update the candidate’s details below.</p>
+  </header>
+
+  <!-- Edit Form -->
+  <form method="POST" class="bg-white border border-gray-200 rounded-lg shadow-md p-8 space-y-8" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block mb-2 text-sm font-semibold text-gray-700">
+          {{ field.label }}
+        </label>
+        {{ field|add_class:"w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" }}
+
+        {% if field.help_text %}
+          <p class="mt-1 text-xs italic text-gray-400">{{ field.help_text }}</p>
+        {% endif %}
+        {% if field.errors %}
+          <p class="mt-1 text-sm text-red-600 font-medium">{{ field.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-4 pt-6">
+      <a href="{% url 'candidate_detail' candidate.id %}"
+         class="inline-flex items-center px-5 py-2 text-sm font-semibold text-gray-600 rounded-md hover:text-gray-900 hover:underline transition">
+        Cancel
+      </a>
+      <button type="submit"
+              class="inline-flex items-center px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 -ml-1" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

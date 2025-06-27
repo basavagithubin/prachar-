@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-12 bg-white p-8 rounded-2xl shadow-xl border border-yellow-100">
+
+  <!-- Gita Quote -->
+  <p class="text-center italic text-yellow-700 mb-6">
+    "You have the right to perform your prescribed duties, but you are not entitled to the fruits of your actions." — Bhagavad Gita 2.47
+  </p>
+
+  <h2 class="text-3xl font-bold text-center text-orange-800 mb-8">
+    🙏 Register New Candidate
+  </h2>
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-1">
+          {{ field.label }}
+        </label>
+
+        {% render_field field class="w-full py-2 px-3 border border-gray-300 rounded-lg shadow-sm text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" %}
+
+        {% if field.errors %}
+          <p class="text-red-500 text-xs mt-1">
+            {{ field.errors|striptags }}
+          </p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button type="submit"
+      class="w-full py-2 px-4 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 shadow-md transition">
+      ➕ Register Candidate
+    </button>
+  </form>
+</div>
+{% endblock %}
+{% comment %} {% extends 'core/base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 shadow-lg rounded-xl mt-10">
+  <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Register Candidate</h2>
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <!-- Render each field with consistent styling -->
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          {{ field.label }}
+        </label>
+
+        {% if field.name == "level" %}
+          {{ field|add_class:"w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 bg-white text-sm" }}
+        {% else %}
+          {{ field|add_class:"w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 bg-white text-sm" }}
+        {% endif %}
+
+        {% if field.errors %}
+          <p class="text-red-500 text-xs mt-1">{{ field.errors|striptags }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button type="submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+      Register
+    </button>
+  </form>
+</div>
+{% endblock %} {% endcomment %}
+{% comment %} {% extends 'core/base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 shadow-lg rounded-xl mt-10">
+  <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Register Candidate</h2>
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <!-- Renders Django form fields with custom styling -->
+    {% for field in form %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          {{ field.label }}
+        </label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-red-500 text-xs mt-1">{{ field.errors|striptags }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+      Register
+    </button>
+  </form>
+</div>
+{% endblock %} {% endcomment %}

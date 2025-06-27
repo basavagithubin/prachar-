@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto mt-10 px-4">
+  <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Your Assigned Candidates</h2>
+
+  {% if candidates %}
+    <ul class="space-y-4">
+      {% for candidate in candidates %}
+        <li class="bg-white p-4 rounded-lg shadow flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <div>
+            <p class="text-lg font-semibold text-gray-800">{{ candidate.name }}</p>
+            <p class="text-sm text-gray-600">{{ candidate.email }}</p>
+            <p class="text-sm text-gray-600">Phone: {{ candidate.phone }}</p>
+          </div>
+          <div class="mt-2 sm:mt-0">
+            {% if candidate.attended %}
+              <span class="inline-block bg-green-100 text-green-700 px-3 py-1 text-sm rounded-full">Attended</span>
+            {% else %}
+              <span class="inline-block bg-red-100 text-red-600 px-3 py-1 text-sm rounded-full">Not Attended</span>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-center text-gray-500 mt-8">No candidates assigned to you.</p>
+  {% endif %}
+</div>
+{% endblock %}

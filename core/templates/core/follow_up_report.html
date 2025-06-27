@@ -1,0 +1,668 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-10 bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+  <h1 class="text-4xl font-bold text-yellow-900 mb-8 text-center">📖 Follow-Up Report – {{ today }}</h1>
+
+  <!-- 🔹 TODAY'S SUMMARY -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">🧘 Today's Status Summary</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {% for label, count in status_display_count.items %}
+        <div class="bg-yellow-100 border-l-4 border-orange-600 p-4 rounded-lg cursor-pointer hover:shadow-md transition" onclick="openModal('modal-today-{{ label|slugify }}')">
+          <h3 class="text-lg font-semibold text-yellow-900">{{ label }}</h3>
+          <p class="text-2xl font-bold text-orange-700">{{ count }}</p>
+        </div>
+
+        <!-- Modal: Today -->
+        <div id="modal-today-{{ label|slugify }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ label }}</h2>
+            <ul class="space-y-2">
+              {% for candidate in status_candidate_map|dict_get:label %}
+                <li class="text-gray-800">{{ candidate.name }}</li>
+              {% empty %}
+                <li class="text-gray-500">No candidates found.</li>
+              {% endfor %}
+            </ul>
+            <button onclick="closeModal('modal-today-{{ label|slugify }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 🔸 CURRENT SESSION -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📅 Session Summary ({{ current_session.date }})</h2>
+
+    <!-- Speaker Name Form -->
+    <form method="POST" class="mb-4 flex items-center gap-4">
+      {% csrf_token %}
+      <input type="text" name="speaker_name" placeholder="Enter Speaker Name"
+             value="{{ current_session.speaker_name|default_if_none:'' }}"
+             class="border border-gray-300 rounded px-4 py-2 w-1/2">
+      <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">Save</button>
+    </form>
+
+    <ul class="text-lg text-gray-700 space-y-2">
+      <li>
+        <strong>Speaker:</strong>
+        <span class="text-indigo-800 font-semibold">
+          {{ current_session.speaker_name|default:"Not yet added" }}
+        </span>
+      </li>
+      {% for label, key in session_labels %}
+        <li>
+          <strong>{{ label }}:</strong>
+          <span class="text-orange-700 cursor-pointer underline" onclick="openModal('modal-{{ key }}')">
+            {{ current_session_candidates|dict_get:key|length }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 🔹 Current Session Modals -->
+  {% for key, candidates in current_session_candidates.items %}
+    <div id="modal-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ key|title }}</h2>
+        <ul class="space-y-2">
+          {% for candidate in candidates %}
+            <li class="text-gray-800">{{ candidate.name }}</li>
+          {% empty %}
+            <li class="text-gray-500">No candidates found.</li>
+          {% endfor %}
+        </ul>
+        <button onclick="closeModal('modal-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- 🔸 HISTORICAL SESSIONS -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📚 Historical Follow-Up Sessions</h2>
+    <table class="w-full table-auto border border-orange-300 text-sm">
+      <thead class="bg-yellow-200 text-yellow-900">
+        <tr>
+          <th class="px-4 py-2 text-left">Date</th>
+          <th class="px-4 py-2 text-left">Speaker</th>
+          <th class="px-4 py-2 text-center">Followed Up</th>
+          <th class="px-4 py-2 text-center">Attended</th>
+          <th class="px-4 py-2 text-center">New</th>
+          <th class="px-4 py-2 text-center">Not Attended</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+          <tr class="border-t hover:bg-yellow-100">
+            <td class="px-4 py-2">{{ session.date }}</td>
+            <td class="px-4 py-2">{{ session.speaker_name|default:"Not added" }}</td>
+            {% for key in report_keys %}
+              <td class="px-4 py-2 text-center text-orange-700 cursor-pointer underline" onclick="openModal('modal-history-{{ session.id }}-{{ key }}')">
+                {{ session.candidate_map|dict_get:key|length }}
+              </td>
+            {% endfor %}
+          </tr>
+
+          <!-- Modals: Historical -->
+          {% for key, candidates in session.candidate_map.items %}
+            <div id="modal-history-{{ session.id }}-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+              <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4 text-indigo-900">Session {{ session.date }} – {{ key|title }}</h2>
+                <ul class="space-y-2">
+                  {% for candidate in candidates %}
+                    <li class="text-gray-800">{{ candidate.name }}</li>
+                  {% empty %}
+                    <li class="text-gray-500">No candidates found.</li>
+                  {% endfor %}
+                </ul>
+                <button onclick="closeModal('modal-history-{{ session.id }}-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-4 text-center text-gray-500 italic">No session history found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 🔻 Reset Historical Sessions Button -->
+  <div class="mt-6 text-right">
+    <button onclick="openModal('confirm-reset-modal')" class="bg-red-600 text-white px-6 py-2 rounded shadow hover:bg-red-700 transition">
+      🗑️ Reset History
+    </button>
+  </div>
+
+  <!-- 🔔 Confirm Reset Modal -->
+  <div id="confirm-reset-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <h2 class="text-xl font-bold text-red-700 mb-4">⚠️ Confirm Reset</h2>
+      <p class="text-gray-700 mb-6">Are you sure you want to <strong>delete all historical sessions</strong>? This action cannot be undone.</p>
+      <form method="POST" class="flex justify-end gap-4">
+        {% csrf_token %}
+        <input type="hidden" name="reset_history" value="1">
+        <button type="button" onclick="closeModal('confirm-reset-modal')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ JS for Modal Toggle -->
+<script>
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+</script>
+{% endblock %}
+{% comment %} {% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-10 bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+  <h1 class="text-4xl font-bold text-yellow-900 mb-8 text-center">📖 Follow-Up Report – {{ today }}</h1>
+
+  <!-- 🔹 TODAY'S SUMMARY -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">🧘 Today's Status Summary</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {% for label, count in status_display_count.items %}
+        <div class="bg-yellow-100 border-l-4 border-orange-600 p-4 rounded-lg cursor-pointer hover:shadow-md transition" onclick="openModal('modal-today-{{ label|slugify }}')">
+          <h3 class="text-lg font-semibold text-yellow-900">{{ label }}</h3>
+          <p class="text-2xl font-bold text-orange-700">{{ count }}</p>
+        </div>
+
+        <!-- Modal: Today -->
+        <div id="modal-today-{{ label|slugify }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ label }}</h2>
+            <ul class="space-y-2">
+              {% for candidate in status_candidate_map|dict_get:label %}
+                <li class="text-gray-800">{{ candidate.name }}</li>
+              {% empty %}
+                <li class="text-gray-500">No candidates found.</li>
+              {% endfor %}
+            </ul>
+            <button onclick="closeModal('modal-today-{{ label|slugify }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 🔸 CURRENT SESSION -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📅 Session Summary ({{ current_session.date }})</h2>
+
+    <form method="POST" class="mb-4 flex items-center gap-4">
+      {% csrf_token %}
+      <input type="text" name="speaker_name" placeholder="Enter Speaker Name" value="{{ current_session.speaker_name }}" class="border border-gray-300 rounded px-4 py-2 w-1/2">
+      <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">Add</button>
+    </form>
+
+    <ul class="text-lg text-gray-700 space-y-2">
+      <li>
+        <strong>Speaker:</strong>
+        <span class="text-indigo-800 font-semibold">
+          {{ current_session.speaker_name|default:"Not yet added" }}
+        </span>
+      </li>
+      {% for label, key in session_labels %}
+        <li>
+          <strong>{{ label }}:</strong>
+          <span class="text-orange-700 cursor-pointer underline" onclick="openModal('modal-{{ key }}')">
+            {{ current_session_candidates|dict_get:key|length }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 🔹 Current Session Modals -->
+  {% for key, candidates in current_session_candidates.items %}
+    <div id="modal-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ key|title }}</h2>
+        <ul class="space-y-2">
+          {% for candidate in candidates %}
+            <li class="text-gray-800">{{ candidate.name }}</li>
+          {% empty %}
+            <li class="text-gray-500">No candidates found.</li>
+          {% endfor %}
+        </ul>
+        <button onclick="closeModal('modal-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- 🔸 HISTORICAL SESSIONS -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📚 Historical Follow-Up Sessions</h2>
+    <table class="w-full table-auto border border-orange-300 text-sm">
+      <thead class="bg-yellow-200 text-yellow-900">
+        <tr>
+          <th class="px-4 py-2 text-left">Date</th>
+          <th class="px-4 py-2 text-left">Speaker</th>
+          <th class="px-4 py-2 text-center">Followed Up</th>
+          <th class="px-4 py-2 text-center">Attended</th>
+          <th class="px-4 py-2 text-center">New</th>
+          <th class="px-4 py-2 text-center">Not Attended</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+          <tr class="border-t hover:bg-yellow-100">
+            <td class="px-4 py-2">{{ session.date }}</td>
+            <td class="px-4 py-2">{{ session.speaker_name|default:"Not added" }}</td>
+            {% for key in report_keys %}
+              <td class="px-4 py-2 text-center text-orange-700 cursor-pointer underline" onclick="openModal('modal-history-{{ session.id }}-{{ key }}')">
+                {{ session.candidate_map|dict_get:key|length }}
+              </td>
+            {% endfor %}
+          </tr>
+
+          <!-- Modals: Historical -->
+          {% for key, candidates in session.candidate_map.items %}
+            <div id="modal-history-{{ session.id }}-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+              <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4 text-indigo-900">Session {{ session.date }} – {{ key|title }}</h2>
+                <ul class="space-y-2">
+                  {% for candidate in candidates %}
+                    <li class="text-gray-800">{{ candidate.name }}</li>
+                  {% empty %}
+                    <li class="text-gray-500">No candidates found.</li>
+                  {% endfor %}
+                </ul>
+                <button onclick="closeModal('modal-history-{{ session.id }}-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-4 text-center text-gray-500 italic">No session history found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 🔻 Reset Historical Sessions Button -->
+  <div class="mt-6 text-right">
+    <button onclick="openModal('confirm-reset-modal')" class="bg-red-600 text-white px-6 py-2 rounded shadow hover:bg-red-700 transition">
+      🗑️ Reset History
+    </button>
+  </div>
+
+  <!-- 🔔 Confirm Reset Modal -->
+  <div id="confirm-reset-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <h2 class="text-xl font-bold text-red-700 mb-4">⚠️ Confirm Reset</h2>
+      <p class="text-gray-700 mb-6">Are you sure you want to <strong>delete all historical sessions</strong>? This action cannot be undone.</p>
+      <form method="POST" class="flex justify-end gap-4">
+        {% csrf_token %}
+        <input type="hidden" name="reset_history" value="1">
+        <button type="button" onclick="closeModal('confirm-reset-modal')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ JS for Modal Toggle -->
+<script>
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+</script>
+{% endblock %} {% endcomment %}
+
+
+
+
+
+
+
+{% comment %} {% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-10 bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+  <h1 class="text-4xl font-bold text-yellow-900 mb-8 text-center">📖 Follow-Up Report – {{ today }}</h1>
+
+  <!-- 🔹 TODAY'S SUMMARY -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">🧘 Today's Status Summary</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {% for label, count in status_display_count.items %}
+        <div class="bg-yellow-100 border-l-4 border-orange-600 p-4 rounded-lg cursor-pointer hover:shadow-md transition" onclick="openModal('modal-today-{{ label|slugify }}')">
+          <h3 class="text-lg font-semibold text-yellow-900">{{ label }}</h3>
+          <p class="text-2xl font-bold text-orange-700">{{ count }}</p>
+        </div>
+
+        <!-- Modal: Today -->
+        <div id="modal-today-{{ label|slugify }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ label }}</h2>
+            <ul class="space-y-2">
+              {% for candidate in status_candidate_map|dict_get:label %}
+                <li class="text-gray-800">{{ candidate.name }}</li>
+              {% empty %}
+                <li class="text-gray-500">No candidates found.</li>
+              {% endfor %}
+            </ul>
+            <button onclick="closeModal('modal-today-{{ label|slugify }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 🔸 CURRENT SESSION -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📅 Session Summary ({{ current_session.date }})</h2>
+
+    <form method="POST" class="mb-4 flex items-center gap-4">
+      {% csrf_token %}
+      <input type="text" name="speaker_name" placeholder="Enter Speaker Name" value="{{ current_session.speaker_name }}" class="border border-gray-300 rounded px-4 py-2 w-1/2">
+      <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">Add</button>
+    </form>
+
+    <ul class="text-lg text-gray-700 space-y-2">
+      <li><strong>Speaker:</strong> {{ current_session.speaker_name }}</li>
+      {% for label, key in session_labels %}
+        <li>
+          <strong>{{ label }}:</strong>
+          <span class="text-orange-700 cursor-pointer underline" onclick="openModal('modal-{{ key }}')">
+            {{ current_session_candidates|dict_get:key|length }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 🔹 Current Session Modals -->
+  {% for key, candidates in current_session_candidates.items %}
+    <div id="modal-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ key|title }}</h2>
+        <ul class="space-y-2">
+          {% for candidate in candidates %}
+            <li class="text-gray-800">{{ candidate.name }}</li>
+          {% empty %}
+            <li class="text-gray-500">No candidates found.</li>
+          {% endfor %}
+        </ul>
+        <button onclick="closeModal('modal-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- 🔸 HISTORICAL SESSIONS -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📚 Historical Follow-Up Sessions</h2>
+    <table class="w-full table-auto border border-orange-300 text-sm">
+      <thead class="bg-yellow-200 text-yellow-900">
+        <tr>
+          <th class="px-4 py-2 text-left">Date</th>
+          <th class="px-4 py-2 text-left">Speaker</th>
+          <th class="px-4 py-2 text-center">Followed Up</th>
+          <th class="px-4 py-2 text-center">Attended</th>
+          <th class="px-4 py-2 text-center">New</th>
+          <th class="px-4 py-2 text-center">Not Attended</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+          <tr class="border-t hover:bg-yellow-100">
+            <td class="px-4 py-2">{{ session.date }}</td>
+            <td class="px-4 py-2">{{ session.speaker_name }}</td>
+            {% for key in report_keys %}
+              <td class="px-4 py-2 text-center text-orange-700 cursor-pointer underline" onclick="openModal('modal-history-{{ session.id }}-{{ key }}')">
+                {{ session.candidate_map|dict_get:key|length }}
+              </td>
+            {% endfor %}
+          </tr>
+
+          <!-- Modals: Historical -->
+          {% for key, candidates in session.candidate_map.items %}
+            <div id="modal-history-{{ session.id }}-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+              <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4 text-indigo-900">Session {{ session.date }} – {{ key|title }}</h2>
+                <ul class="space-y-2">
+                  {% for candidate in candidates %}
+                    <li class="text-gray-800">{{ candidate.name }}</li>
+                  {% empty %}
+                    <li class="text-gray-500">No candidates found.</li>
+                  {% endfor %}
+                </ul>
+                <button onclick="closeModal('modal-history-{{ session.id }}-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-4 text-center text-gray-500 italic">No session history found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 🔻 Reset Historical Sessions Button -->
+  <div class="mt-6 text-right">
+    <button onclick="openModal('confirm-reset-modal')" class="bg-red-600 text-white px-6 py-2 rounded shadow hover:bg-red-700 transition">
+      🗑️ Reset History
+    </button>
+  </div>
+
+  <!-- 🔔 Confirm Reset Modal -->
+  <div id="confirm-reset-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <h2 class="text-xl font-bold text-red-700 mb-4">⚠️ Confirm Reset</h2>
+      <p class="text-gray-700 mb-6">Are you sure you want to <strong>delete all historical sessions</strong>? This action cannot be undone.</p>
+      <form method="POST" class="flex justify-end gap-4">
+        {% csrf_token %}
+        <input type="hidden" name="reset_history" value="1">
+        <button type="button" onclick="closeModal('confirm-reset-modal')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ JS for Modal Toggle -->
+<script>
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+</script>
+{% endblock %} {% endcomment %}
+
+
+
+
+
+
+
+
+{% comment %} {% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-10 bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+  <h1 class="text-4xl font-bold text-yellow-900 mb-8 text-center">📖 Follow-Up Report – {{ today }}</h1>
+
+  <!-- 🔹 TODAY'S SUMMARY -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">🧘 Today's Status Summary</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {% for label, count in status_display_count.items %}
+        <div class="bg-yellow-100 border-l-4 border-orange-600 p-4 rounded-lg cursor-pointer hover:shadow-md transition" onclick="openModal('modal-today-{{ label|slugify }}')">
+          <h3 class="text-lg font-semibold text-yellow-900">{{ label }}</h3>
+          <p class="text-2xl font-bold text-orange-700">{{ count }}</p>
+        </div>
+
+        <!-- Modal: Today -->
+        <div id="modal-today-{{ label|slugify }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ label }}</h2>
+            <ul class="space-y-2">
+              {% for candidate in status_candidate_map|dict_get:label %}
+                <li class="text-gray-800">{{ candidate.name }}</li>
+              {% empty %}
+                <li class="text-gray-500">No candidates found.</li>
+              {% endfor %}
+            </ul>
+            <button onclick="closeModal('modal-today-{{ label|slugify }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 🔸 CURRENT SESSION -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 mb-10 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📅 Session Summary ({{ current_session.date }})</h2>
+
+    <form method="POST" class="mb-4 flex items-center gap-4">
+      {% csrf_token %}
+      <input type="text" name="speaker_name" placeholder="Enter Speaker Name" value="{{ current_session.speaker_name }}" class="border border-gray-300 rounded px-4 py-2 w-1/2">
+      <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">Add</button>
+    </form>
+
+    <ul class="text-lg text-gray-700 space-y-2">
+      <li><strong>Speaker:</strong> {{ current_session.speaker_name }}</li>
+      {% for label, key in session_labels %}
+        <li>
+          <strong>{{ label }}:</strong>
+          <span class="text-orange-700 cursor-pointer underline" onclick="openModal('modal-{{ key }}')">
+            {{ current_session_candidates|dict_get:key|length }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 🔹 Current Session Modals -->
+  {% for key, candidates in current_session_candidates.items %}
+    <div id="modal-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4 text-indigo-900">Candidates – {{ key|title }}</h2>
+        <ul class="space-y-2">
+          {% for candidate in candidates %}
+            <li class="text-gray-800">{{ candidate.name }}</li>
+          {% empty %}
+            <li class="text-gray-500">No candidates found.</li>
+          {% endfor %}
+        </ul>
+        <button onclick="closeModal('modal-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- 🔸 HISTORICAL SESSIONS -->
+  <section class="bg-yellow-50 shadow rounded-lg p-6 border border-orange-200">
+    <h2 class="text-2xl font-semibold text-indigo-900 mb-4">📚 Historical Follow-Up Sessions</h2>
+    <table class="w-full table-auto border border-orange-300 text-sm">
+      <thead class="bg-yellow-200 text-yellow-900">
+        <tr>
+          <th class="px-4 py-2 text-left">Date</th>
+          <th class="px-4 py-2 text-left">Speaker :{{ current_session.speaker_name }}</th>
+          <th class="px-4 py-2 text-center">Followed Up</th>
+          <th class="px-4 py-2 text-center">Attended</th>
+          <th class="px-4 py-2 text-center">New</th>
+          <th class="px-4 py-2 text-center">Not Attended</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+          <tr class="border-t hover:bg-yellow-100">
+            <td class="px-4 py-2">{{ session.date }}</td>
+            <td class="px-4 py-2">{{ session.speaker_name }}</td>
+            {% for key in report_keys %}
+              <td class="px-4 py-2 text-center text-orange-700 cursor-pointer underline" onclick="openModal('modal-history-{{ session.id }}-{{ key }}')">
+                {{ session.candidate_map|dict_get:key|length }}
+              </td>
+            {% endfor %}
+          </tr>
+
+          <!-- Modals: Historical -->
+          {% for key, candidates in session.candidate_map.items %}
+            <div id="modal-history-{{ session.id }}-{{ key }}" class="hidden fixed inset-0 bg-indigo-900 bg-opacity-50 z-50 flex items-center justify-center">
+              <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4 text-indigo-900">Session {{ session.date }} – {{ key|title }}</h2>
+                <ul class="space-y-2">
+                  {% for candidate in candidates %}
+                    <li class="text-gray-800">{{ candidate.name }}</li>
+                  {% empty %}
+                    <li class="text-gray-500">No candidates found.</li>
+                  {% endfor %}
+                </ul>
+                <button onclick="closeModal('modal-history-{{ session.id }}-{{ key }}')" class="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 w-full">Close</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-4 text-center text-gray-500 italic">No session history found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <!-- 🔻 Reset Historical Sessions Button -->
+<div class="mt-6 text-right">
+  <button onclick="openModal('confirm-reset-modal')" class="bg-red-600 text-white px-6 py-2 rounded shadow hover:bg-red-700 transition">
+    🗑️ Reset History
+  </button>
+</div>
+
+<!-- 🔔 Confirm Reset Modal -->
+<div id="confirm-reset-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+    <h2 class="text-xl font-bold text-red-700 mb-4">⚠️ Confirm Reset</h2>
+    <p class="text-gray-700 mb-6">Are you sure you want to <strong>delete all historical sessions</strong>? This action cannot be undone.</p>
+    <form method="POST" class="flex justify-end gap-4">
+      {% csrf_token %}
+      <input type="hidden" name="reset_history" value="1">
+      <button type="button" onclick="closeModal('confirm-reset-modal')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+      <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Yes, Delete</button>
+    </form>
+  </div>
+</div>
+
+</div>
+
+<!-- ✅ JS for Modal Toggle -->
+<script>
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  }
+</script>
+{% endblock %} {% endcomment %}
