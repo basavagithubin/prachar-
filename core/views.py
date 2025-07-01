@@ -101,6 +101,17 @@ def dashboard(request):
             candidate.save()
             messages.success(request, f"Marked follow-up for {candidate.name}.")
 
+        elif 'delete_candidate_id' in request.POST:
+            candidate = get_object_or_404(Candidate, id=request.POST['delete_candidate_id'])
+            if 'delete_permanent' in request.POST:
+                candidate.delete()
+                messages.error(request, f"{candidate.name} permanently deleted from the system.")
+            else:
+                candidate.deleted = True
+                candidate.save()
+                messages.warning(request, f"{candidate.name} marked as deleted.")
+
+
         elif 'follow_up_status_candidate_id' in request.POST:
             candidate = get_object_or_404(Candidate, id=request.POST['follow_up_status_candidate_id'])
             status = request.POST.get('follow_up_status', '').strip()
@@ -278,21 +289,134 @@ from collections import defaultdict
 from django.shortcuts import render
 from .models import Attendance
 
+from django.shortcuts import render
+from django.http import HttpResponse
+from collections import defaultdict
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from .models import Attendance
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from collections import defaultdict
+from openpyxl import Workbook
+from .models import Attendance
+
+from django.http import HttpResponse
+import openpyxl
+from collections import defaultdict
+
 def attendance_list(request):
-    # Fetch attendance records with candidate info and timestamp
     attendance_records = Attendance.objects.select_related('candidate').order_by('-date', '-timestamp')
 
     grouped_attendance = defaultdict(list)
     for record in attendance_records:
-        # Safe fallback in case timestamp is accidentally null (unlikely with auto_now_add)
-        if not hasattr(record, 'timestamp') or record.timestamp is None:
-            continue
-        grouped_attendance[record.date].append(record)
+        if record.timestamp:
+            grouped_attendance[record.date].append(record)
+
+    # ✅ Handle Excel Export
+    if request.GET.get('export') == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Attendance Report"
+        ws.append(["Date", "Candidate Name", "Phone", "Marked At"])
+
+        for date, records in grouped_attendance.items():
+            for r in records:
+                ws.append([
+                    date.strftime('%Y-%m-%d'),
+                    r.candidate.name,
+                    r.candidate.phone,
+                    r.timestamp.strftime('%H:%M:%S'),
+                ])
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=Attendance_Report.xlsx'
+        wb.save(response)
+        return response
 
     context = {
-        'grouped_attendance': dict(grouped_attendance),
+        'grouped_attendance': sorted(grouped_attendance.items(), reverse=True),
     }
     return render(request, 'core/attendance_list.html', context)
+
+
+
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+
+@require_POST
+def reset_attendance(request):
+    Attendance.objects.all().delete()
+    messages.success(request, "✅ All attendance records have been reset.")
+    return redirect('attendance_list')  # or use your URL name
+
+
+# def attendance_list(request):
+#     attendance_records = Attendance.objects.select_related('candidate').order_by('-date', '-timestamp')
+
+#     grouped_attendance = defaultdict(list)
+#     for record in attendance_records:
+#         if not hasattr(record, 'timestamp') or record.timestamp is None:
+#             continue
+#         grouped_attendance[record.date].append(record)
+
+#     # ✅ Export as Excel if requested
+#     if request.GET.get('export') == 'excel':
+#         wb = Workbook()
+#         ws = wb.active
+#         ws.title = "Attendance Records"
+
+#         row_num = 1
+#         for date, records in grouped_attendance.items():
+#             ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=4)
+#             ws.cell(row=row_num, column=1).value = f"📆 {date.strftime('%d %B %Y')} - {len(records)} present"
+#             row_num += 1
+
+#             # Table headers
+#             columns = ['#', 'Candidate Name', 'Phone', 'Marked At']
+#             for col_num, column_title in enumerate(columns, 1):
+#                 ws.cell(row=row_num, column=col_num).value = column_title
+#             row_num += 1
+
+#             # Table rows
+#             for idx, record in enumerate(records, 1):
+#                 ws.cell(row=row_num, column=1).value = idx
+#                 ws.cell(row=row_num, column=2).value = record.candidate.name
+#                 ws.cell(row=row_num, column=3).value = record.candidate.phone
+#                 ws.cell(row=row_num, column=4).value = record.timestamp.strftime('%I:%M %p')
+#                 row_num += 1
+
+#             row_num += 1  # Blank line between sections
+
+#         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#         response['Content-Disposition'] = 'attachment; filename=Attendance_Report.xlsx'
+#         wb.save(response)
+#         return response
+
+#     context = {
+#         'grouped_attendance': dict(grouped_attendance),
+#     }
+#     return render(request, 'core/attendance_list.html', context)
+
+
+
+# def attendance_list(request):
+#     # Fetch attendance records with candidate info and timestamp
+#     attendance_records = Attendance.objects.select_related('candidate').order_by('-date', '-timestamp')
+
+#     grouped_attendance = defaultdict(list)
+#     for record in attendance_records:
+#         # Safe fallback in case timestamp is accidentally null (unlikely with auto_now_add)
+#         if not hasattr(record, 'timestamp') or record.timestamp is None:
+#             continue
+#         grouped_attendance[record.date].append(record)
+
+#     context = {
+#         'grouped_attendance': dict(grouped_attendance),
+#     }
+#     return render(request, 'core/attendance_list.html', context)
 
 
 
@@ -328,36 +452,92 @@ from django.contrib import messages
 from datetime import date
 from .models import Candidate, FollowUpSession
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from datetime import date
+from .models import Candidate, FollowUpSession
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from datetime import date
+from .models import Candidate, FollowUpSession
+
+
+import openpyxl
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import HttpResponse
+from datetime import date
+import openpyxl
+from openpyxl.utils import get_column_letter
+
+from .models import Candidate, FollowUpSession
+
 @login_required
 def follow_up_report(request):
     today = date.today()
     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
 
-    # ✅ Handle reset historical sessions
+    # ✅ Reset historical sessions
     if request.method == 'POST' and request.POST.get('reset_history') == '1':
         FollowUpSession.objects.exclude(date=today).delete()
         messages.success(request, "Historical sessions cleared successfully.")
         return redirect('follow_up_report')
 
-    # ✅ Handle speaker name input
+    # ✅ Save speaker name
     if request.method == 'POST' and 'speaker_name' in request.POST:
         speaker_name = request.POST.get('speaker_name')
         if speaker_name:
             current_session.speaker_name = speaker_name
             current_session.save()
-            # ✅ Refresh session so the updated name reflects in summary
-            current_session.refresh_from_db()
             messages.success(request, "Speaker name updated successfully.")
             return redirect('follow_up_report')
 
-    # ✅ Update session candidate groups
+    # ✅ Update today's candidate groups
     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
     current_session.new.set(Candidate.objects.filter(registration_date=today))
     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
+    current_session.refresh_from_db()
 
-    current_session.refresh_from_db()  # ensure we use latest values
+    # ✅ Export Excel if requested
+    if request.GET.get('export_excel') == '1':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Follow-Up Summary"
 
+        headers = ['Name', 'Phone', 'Status']
+        ws.append(headers)
+
+        status_map = {
+            'Followed Up': current_session.followed_up.all(),
+            'Attended': current_session.attended.all(),
+            'New': current_session.new.all(),
+            'Not Attended': current_session.not_attended.all()
+        }
+
+        for status, candidates in status_map.items():
+            for candidate in candidates:
+                # Fallback for missing phone field
+                phone = getattr(candidate, 'phone_number', getattr(candidate, 'mobile', ''))
+                ws.append([candidate.name, phone, status])
+
+        for col in range(1, len(headers) + 1):
+            ws.column_dimensions[get_column_letter(col)].width = 20
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=follow_up_report.xlsx'
+        wb.save(response)
+        return response
+
+    # ✅ Display counts and groupings
     status_display_count = {
         'Followed Up': current_session.followed_up.count(),
         'Attended': current_session.attended.count(),
@@ -379,6 +559,7 @@ def follow_up_report(request):
         'not_attended': current_session.not_attended.all()
     }
 
+    # ✅ Historical Sessions
     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
     for session in sessions:
         session.candidate_map = {
@@ -387,6 +568,10 @@ def follow_up_report(request):
             'new': session.new.all(),
             'not_attended': session.not_attended.all()
         }
+
+    # ✅ Chart data
+    status_labels = list(status_display_count.keys())
+    status_values = list(status_display_count.values())
 
     context = {
         'today': today,
@@ -397,9 +582,267 @@ def follow_up_report(request):
         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
         'sessions': sessions,
         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
+        'status_labels': status_labels,
+        'status_values': status_values,
     }
 
     return render(request, 'core/follow_up_report.html', context)
+
+
+# @login_required
+# def follow_up_report(request):
+#     today = date.today()
+#     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
+
+#     # ✅ Reset historical sessions
+#     if request.method == 'POST' and request.POST.get('reset_history') == '1':
+#         FollowUpSession.objects.exclude(date=today).delete()
+#         messages.success(request, "Historical sessions cleared successfully.")
+#         return redirect('follow_up_report')
+
+#     # ✅ Speaker name update
+#     if request.method == 'POST' and 'speaker_name' in request.POST:
+#         speaker_name = request.POST.get('speaker_name')
+#         if speaker_name:
+#             current_session.speaker_name = speaker_name
+#             current_session.save()
+#             messages.success(request, "Speaker name updated successfully.")
+#             return redirect('follow_up_report')
+
+#     # ✅ Export Excel
+#     if request.GET.get('export_excel') == '1':
+#         wb = openpyxl.Workbook()
+#         ws = wb.active
+#         ws.title = "Follow-Up Summary"
+
+#         headers = ['Name', 'Phone', 'Status']
+#         ws.append(headers)
+
+#         status_map = {
+#             'Followed Up': current_session.followed_up.all(),
+#             'Attended': current_session.attended.all(),
+#             'New': current_session.new.all(),
+#             'Not Attended': current_session.not_attended.all()
+#         }
+
+#         for status, candidates in status_map.items():
+#             for candidate in candidates:
+#                 ws.append([candidate.name, candidate.phone_number, status])
+
+#         for col in range(1, len(headers)+1):
+#             ws.column_dimensions[get_column_letter(col)].width = 20
+
+#         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#         response['Content-Disposition'] = 'attachment; filename=follow_up_report.xlsx'
+#         wb.save(response)
+#         return response
+
+#     # ✅ Group candidate sets
+#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
+#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
+#     current_session.new.set(Candidate.objects.filter(registration_date=today))
+#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
+
+#     status_display_count = {
+#         'Followed Up': current_session.followed_up.count(),
+#         'Attended': current_session.attended.count(),
+#         'New': current_session.new.count(),
+#         'Not Attended': current_session.not_attended.count()
+#     }
+
+#     status_candidate_map = {
+#         'Followed Up': current_session.followed_up.all(),
+#         'Attended': current_session.attended.all(),
+#         'New': current_session.new.all(),
+#         'Not Attended': current_session.not_attended.all()
+#     }
+
+#     current_session_candidates = {
+#         'followed_up': current_session.followed_up.all(),
+#         'attended': current_session.attended.all(),
+#         'new': current_session.new.all(),
+#         'not_attended': current_session.not_attended.all()
+#     }
+
+#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
+#     for session in sessions:
+#         session.candidate_map = {
+#             'followed_up': session.followed_up.all(),
+#             'attended': session.attended.all(),
+#             'new': session.new.all(),
+#             'not_attended': session.not_attended.all()
+#         }
+
+#     context = {
+#         'today': today,
+#         'status_display_count': status_display_count,
+#         'status_candidate_map': status_candidate_map,
+#         'current_session': current_session,
+#         'current_session_candidates': current_session_candidates,
+#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
+#         'sessions': sessions,
+#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
+#         'status_labels': list(status_display_count.keys()),
+#         'status_values': list(status_display_count.values()),
+#     }
+
+#     return render(request, 'core/follow_up_report.html', context)
+
+
+
+
+# @login_required
+# def follow_up_report(request):
+#     today = date.today()
+#     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
+
+#     # ✅ Handle reset historical sessions
+#     if request.method == 'POST' and request.POST.get('reset_history') == '1':
+#         FollowUpSession.objects.exclude(date=today).delete()
+#         messages.success(request, "Historical sessions cleared successfully.")
+#         return redirect('follow_up_report')
+
+#     # ✅ Handle speaker name input
+#     if request.method == 'POST' and 'speaker_name' in request.POST:
+#         speaker_name = request.POST.get('speaker_name')
+#         if speaker_name:
+#             current_session.speaker_name = speaker_name
+#             current_session.save()
+#             current_session.refresh_from_db()
+#             messages.success(request, "Speaker name updated successfully.")
+#             return redirect('follow_up_report')
+
+#     # ✅ Update session candidate groups
+#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
+#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
+#     current_session.new.set(Candidate.objects.filter(registration_date=today))
+#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
+
+#     current_session.refresh_from_db()
+
+#     status_display_count = {
+#         'Followed Up': current_session.followed_up.count(),
+#         'Attended': current_session.attended.count(),
+#         'New': current_session.new.count(),
+#         'Not Attended': current_session.not_attended.count()
+#     }
+
+#     status_candidate_map = {
+#         'Followed Up': current_session.followed_up.all(),
+#         'Attended': current_session.attended.all(),
+#         'New': current_session.new.all(),
+#         'Not Attended': current_session.not_attended.all()
+#     }
+
+#     current_session_candidates = {
+#         'followed_up': current_session.followed_up.all(),
+#         'attended': current_session.attended.all(),
+#         'new': current_session.new.all(),
+#         'not_attended': current_session.not_attended.all()
+#     }
+
+#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
+#     for session in sessions:
+#         session.candidate_map = {
+#             'followed_up': session.followed_up.all(),
+#             'attended': session.attended.all(),
+#             'new': session.new.all(),
+#             'not_attended': session.not_attended.all()
+#         }
+
+#     # ✅ Prepare data for chart
+#     status_labels = list(status_display_count.keys())
+#     status_values = list(status_display_count.values())
+
+#     context = {
+#         'today': today,
+#         'status_display_count': status_display_count,
+#         'status_candidate_map': status_candidate_map,
+#         'current_session': current_session,
+#         'current_session_candidates': current_session_candidates,
+#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
+#         'sessions': sessions,
+#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
+#         'status_labels': status_labels,
+#         'status_values': status_values,
+#     }
+
+#     return render(request, 'core/follow_up_report.html', context)
+
+
+# 01-07-2025 code
+# @login_required
+# def follow_up_report(request):
+#     today = date.today()
+#     current_session, _ = FollowUpSession.objects.get_or_create(date=today)
+
+#     # ✅ Handle reset historical sessions
+#     if request.method == 'POST' and request.POST.get('reset_history') == '1':
+#         FollowUpSession.objects.exclude(date=today).delete()
+#         messages.success(request, "Historical sessions cleared successfully.")
+#         return redirect('follow_up_report')
+
+#     # ✅ Handle speaker name input
+#     if request.method == 'POST' and 'speaker_name' in request.POST:
+#         speaker_name = request.POST.get('speaker_name')
+#         if speaker_name:
+#             current_session.speaker_name = speaker_name
+#             current_session.save()
+#             # ✅ Refresh session so the updated name reflects in summary
+#             current_session.refresh_from_db()
+#             messages.success(request, "Speaker name updated successfully.")
+#             return redirect('follow_up_report')
+
+#     # ✅ Update session candidate groups
+#     current_session.followed_up.set(Candidate.objects.filter(followed_up=True, updated_at__date=today))
+#     current_session.attended.set(Candidate.objects.filter(attended=True, updated_at__date=today))
+#     current_session.new.set(Candidate.objects.filter(registration_date=today))
+#     current_session.not_attended.set(Candidate.objects.filter(attended=False, updated_at__date=today))
+
+#     current_session.refresh_from_db()  # ensure we use latest values
+
+#     status_display_count = {
+#         'Followed Up': current_session.followed_up.count(),
+#         'Attended': current_session.attended.count(),
+#         'New': current_session.new.count(),
+#         'Not Attended': current_session.not_attended.count()
+#     }
+
+#     status_candidate_map = {
+#         'Followed Up': current_session.followed_up.all(),
+#         'Attended': current_session.attended.all(),
+#         'New': current_session.new.all(),
+#         'Not Attended': current_session.not_attended.all()
+#     }
+
+#     current_session_candidates = {
+#         'followed_up': current_session.followed_up.all(),
+#         'attended': current_session.attended.all(),
+#         'new': current_session.new.all(),
+#         'not_attended': current_session.not_attended.all()
+#     }
+
+#     sessions = FollowUpSession.objects.exclude(date=today).order_by('-date')
+#     for session in sessions:
+#         session.candidate_map = {
+#             'followed_up': session.followed_up.all(),
+#             'attended': session.attended.all(),
+#             'new': session.new.all(),
+#             'not_attended': session.not_attended.all()
+#         }
+
+#     context = {
+#         'today': today,
+#         'status_display_count': status_display_count,
+#         'status_candidate_map': status_candidate_map,
+#         'current_session': current_session,
+#         'current_session_candidates': current_session_candidates,
+#         'session_labels': [('Followed Up', 'followed_up'), ('Attended', 'attended'), ('New', 'new'), ('Not Attended', 'not_attended')],
+#         'sessions': sessions,
+#         'report_keys': ['followed_up', 'attended', 'new', 'not_attended'],
+#     }
+
+#     return render(request, 'core/follow_up_report.html', context)
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 @login_required

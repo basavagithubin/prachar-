@@ -1,12 +1,13 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="container mx-auto p-6 bg-gradient-to-br from-orange-50 via-white to-yellow-50 rounded-xl shadow">
-    <h2 class="text-3xl font-bold mb-6 text-yellow-900 text-center">📝 Candidate Comments</h2>
+<div class="container mx-auto px-6 py-10 bg-gradient-to-br from-yellow-100 via-white to-orange-100 min-h-screen">
+    <h2 class="text-4xl font-extrabold mb-10 text-center text-orange-800 font-serif drop-shadow-lg tracking-wide">
+        📝 Candidate Comments Summary
+    </h2>
 
     {% if grouped_comments %}
         {% for date, comments in grouped_comments.items %}
-            {% comment %} Calculate follow-up status counts {% endcomment %}
             {% with interested=0 not_interested=0 follow_up_later=0 other=0 %}
                 {% for comment in comments %}
                     {% if comment.candidate.follow_up_status == "Interested" %}
@@ -20,50 +21,52 @@
                     {% endif %}
                 {% endfor %}
 
-                <div class="mb-6 border border-yellow-300 rounded-lg shadow-md bg-yellow-100">
+                <div class="mb-8 rounded-xl shadow-lg border border-yellow-300 bg-white overflow-hidden">
                     <!-- Toggle Header -->
                     <button 
-                        class="w-full text-left px-4 py-3 flex justify-between items-center bg-yellow-200 hover:bg-yellow-300 rounded-t-lg"
                         onclick="toggleComments('comments-{{ forloop.counter }}')"
+                        class="w-full text-left flex justify-between items-center px-6 py-4 bg-yellow-200 hover:bg-yellow-300 transition-all duration-200"
                     >
-                        <span class="text-xl font-semibold text-indigo-900">
+                        <span class="text-xl font-semibold text-orange-900 tracking-wide">
                             {{ date }}
                         </span>
-                        <span class="text-sm text-orange-700">
-                            Total Comments: {{ comments|length }} |
-                            Interested: {{ interested }} |
-                            Not Interested: {{ not_interested }} |
-                            Follow-up Later: {{ follow_up_later }} |
-                            Others: {{ other }}
+                        <span class="text-sm text-gray-700 font-medium">
+                            🗂️ Total: {{ comments|length }} |
+                            ✅ Interested: {{ interested }} |
+                            ❌ Not Interested: {{ not_interested }} |
+                            🔁 Follow-Up Later: {{ follow_up_later }} |
+                            ❓ Other: {{ other }}
                         </span>
                     </button>
 
-                    <!-- Comments Container -->
-                    <div id="comments-{{ forloop.counter }}" class="hidden px-4 pb-4">
-                        <ul class="space-y-4 mt-4">
+                    <!-- Comments Content -->
+                    <div id="comments-{{ forloop.counter }}" class="hidden px-6 pb-6 bg-orange-50/30">
+                        <ul class="space-y-6 pt-6">
                             {% for comment in comments %}
-                                <li class="bg-white rounded-lg shadow p-4 border border-orange-200">
-                                    <div class="text-base font-bold text-yellow-900">
-                                        {{ comment.candidate.name }}
-                                        <span class="text-sm text-gray-500">({{ comment.candidate.phone }})</span>
+                                <li class="bg-white border-l-4 border-orange-400 p-4 rounded-lg shadow-sm hover:shadow-md transition">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h3 class="text-lg font-semibold text-orange-800">
+                                            {{ comment.candidate.name }}
+                                            <span class="text-sm text-gray-500 font-normal ml-1">({{ comment.candidate.phone }})</span>
+                                        </h3>
+                                        <span class="text-xs text-gray-500">{{ comment.timestamp|date:"d M Y, H:i" }}</span>
                                     </div>
-                                    <div class="text-sm text-gray-700">
-                                        Volunteer:
+                                    <div class="text-sm text-gray-700 mb-1 space-x-2">
+                                        <span class="font-medium text-indigo-800">👤 Volunteer:</span>
                                         {% if comment.candidate.assigned_volunteer %}
-                                            <span class="font-semibold text-indigo-800">{{ comment.candidate.assigned_volunteer.name }}</span>
+                                            {{ comment.candidate.assigned_volunteer.name }}
                                         {% else %}
                                             <span class="italic text-gray-400">Not Assigned</span>
                                         {% endif %}
-                                        &nbsp;|&nbsp;
-                                        Status:
+                                        |
+                                        <span class="font-medium text-indigo-800">📊 Status:</span>
                                         {% if comment.candidate.follow_up_status %}
-                                            <span class="font-semibold text-indigo-800">{{ comment.candidate.follow_up_status }}</span>
+                                            {{ comment.candidate.follow_up_status }}
                                         {% else %}
                                             <span class="italic text-gray-400">N/A</span>
                                         {% endif %}
                                     </div>
-                                    <div class="mt-2 text-gray-800">{{ comment.content }}</div>
-                                    <div class="text-xs text-gray-500 mt-1">{{ comment.timestamp|date:"d M Y H:i" }}</div>
+                                    <p class="mt-2 text-gray-800 leading-relaxed">{{ comment.content }}</p>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -72,225 +75,18 @@
             {% endwith %}
         {% endfor %}
     {% else %}
-        <p class="text-orange-700 italic text-center">No comments available.</p>
+        <p class="text-center text-orange-600 text-lg italic mt-12">🙏 No comments available right now.</p>
     {% endif %}
 </div>
 
-<!-- Simple JS for toggle -->
+<!-- Toggle JS -->
 <script>
     function toggleComments(id) {
-        const section = document.getElementById(id);
-        section.classList.toggle('hidden');
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('hidden');
+        }
     }
 </script>
 {% endblock %}
 
-{% comment %} {% extends 'core/base.html' %}
-
-{% block content %}
-<div class="container mx-auto p-6 bg-gradient-to-br from-orange-50 via-white to-yellow-50 rounded-xl shadow">
-    <h2 class="text-3xl font-bold mb-6 text-yellow-900 text-center">📝 Candidate Comments</h2>
-
-    {% if grouped_comments %}
-        {% for date, comments in grouped_comments.items %}
-            <div class="mb-6 border border-yellow-300 rounded-lg shadow-md bg-yellow-100">
-                <!-- Toggle Header -->
-                <button 
-                    class="w-full text-left px-4 py-3 flex justify-between items-center bg-yellow-200 hover:bg-yellow-300 rounded-t-lg"
-                    onclick="toggleComments('comments-{{ forloop.counter }}')"
-                >
-                    <span class="text-xl font-semibold text-indigo-900">
-                        {{ date }}
-                    </span>
-                    <span class="text-sm text-orange-700">Total Comments: {{ comments|length }}</span>
-                </button>
-
-                <!-- Comments Container -->
-                <div id="comments-{{ forloop.counter }}" class="hidden px-4 pb-4">
-                    <ul class="space-y-4 mt-4">
-                        {% for comment in comments %}
-                            <li class="bg-white rounded-lg shadow p-4 border border-orange-200">
-                                <div class="text-base font-bold text-yellow-900">
-                                    {{ comment.candidate.name }}
-                                    <span class="text-sm text-gray-500">({{ comment.candidate.phone }})</span>
-                                </div>
-                                <div class="text-sm text-gray-700">
-                                    Volunteer:
-                                    {% if comment.candidate.assigned_volunteer %}
-                                        <span class="font-semibold text-indigo-800">{{ comment.candidate.assigned_volunteer.name }}</span>
-                                    {% else %}
-                                        <span class="italic text-gray-400">Not Assigned</span>
-                                    {% endif %}
-                                    &nbsp;|&nbsp;
-                                    Status:
-                                    {% if comment.candidate.follow_up_status %}
-                                        <span class="font-semibold text-indigo-800">{{ comment.candidate.follow_up_status }}</span>
-                                    {% else %}
-                                        <span class="italic text-gray-400">N/A</span>
-                                    {% endif %}
-                                </div>
-                                <div class="mt-2 text-gray-800">{{ comment.comment }}</div>
-                                <div class="text-xs text-gray-500 mt-1">{{ comment.created_at|date:"d M Y H:i" }}</div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        {% endfor %}
-    {% else %}
-        <p class="text-orange-700 italic text-center">No comments available.</p>
-    {% endif %}
-</div>
-
-<!-- Simple JS for toggle -->
-<script>
-    function toggleComments(id) {
-        const section = document.getElementById(id);
-        section.classList.toggle('hidden');
-    }
-</script>
-{% endblock %} {% endcomment %}
-
-
-
-
-
-
-
-{% comment %} {% extends 'core/base.html' %}
-
-{% block content %}
-<div class="container mx-auto p-6">
-    <h2 class="text-3xl font-bold mb-6 text-blue-900">📝 Candidate Comments</h2>
-
-    {% if grouped_comments %}
-        {% for date, comments in grouped_comments.items %}
-            <div class="mb-6 border border-blue-200 rounded-lg shadow-md bg-blue-50">
-                <!-- Toggle Header -->
-                <button 
-                    class="w-full text-left px-4 py-3 flex justify-between items-center bg-blue-100 hover:bg-blue-200 rounded-t-lg"
-                    onclick="toggleComments('comments-{{ forloop.counter }}')"
-                >
-                    <span class="text-xl font-semibold text-blue-800">
-                        {{ date }}
-                    </span>
-                    <span class="text-sm text-gray-600">Total Comments: {{ comments|length }}</span>
-                </button>
-
-                <!-- Comments Container -->
-                <div id="comments-{{ forloop.counter }}" class="hidden px-4 pb-4">
-                    <ul class="space-y-4 mt-4">
-                        {% for comment in comments %}
-                            <li class="bg-white rounded-lg shadow p-4 border border-gray-200">
-                                <div class="text-base font-bold text-blue-700">
-                                    {{ comment.candidate.name }}
-                                    <span class="text-sm text-gray-500">({{ comment.candidate.phone }})</span>
-                                </div>
-                                <div class="text-sm text-gray-600">
-                                    Volunteer:
-                                    {% if comment.candidate.assigned_volunteer %}
-                                        <span class="font-semibold">{{ comment.candidate.assigned_volunteer.name }}</span>
-                                    {% else %}
-                                        <span class="italic text-gray-400">Not Assigned</span>
-                                    {% endif %}
-                                    &nbsp;|&nbsp;
-                                    Status:
-                                    {% if comment.candidate.follow_up_status %}
-                                        <span class="font-semibold">{{ comment.candidate.follow_up_status }}</span>
-                                    {% else %}
-                                        <span class="italic text-gray-400">N/A</span>
-                                    {% endif %}
-                                </div>
-                                <div class="mt-2 text-gray-800">{{ comment.comment }}</div>
-                                <div class="text-xs text-gray-500 mt-1">{{ comment.created_at|date:"d M Y H:i" }}</div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        {% endfor %}
-    {% else %}
-        <p class="text-gray-500 italic">No comments available.</p>
-    {% endif %}
-</div>
-
-<!-- Simple JS for toggle -->
-<script>
-    function toggleComments(id) {
-        const section = document.getElementById(id);
-        if (section.classList.contains('hidden')) {
-            section.classList.remove('hidden');
-        } else {
-            section.classList.add('hidden');
-        }
-    }
-</script>
-{% endblock %} {% endcomment %}
-{% comment %} {% extends 'core/base.html' %}
-
-{% block content %}
-<div class="container mx-auto p-6">
-    <h2 class="text-3xl font-bold mb-6 text-blue-900">📝 Candidate Comments</h2>
-
-    {% if grouped_comments %}
-        {% for date, comments in grouped_comments.items %}
-            <div class="mb-10 border border-blue-200 rounded-lg shadow-md bg-blue-50 p-4">
-                <h3 class="text-xl font-semibold text-blue-800 mb-2">{{ date }}</h3>
-                <p class="text-sm text-gray-600 mb-4">Total Comments: {{ comments|length }}</p>
-                <ul class="space-y-4">
-                    {% for comment in comments %}
-                        <li class="bg-white rounded-lg shadow p-4 border border-gray-200">
-                            <div class="text-base font-bold text-blue-700">
-                                {{ comment.candidate.name }} 
-                                <span class="text-sm text-gray-500">({{ comment.candidate.phone }})</span>
-                            </div>
-                            <div class="text-sm text-gray-600">
-                                Volunteer: 
-                                {% if comment.candidate.assigned_volunteer %}
-                                    <span class="font-semibold">{{ comment.candidate.assigned_volunteer.name }}</span>
-                                {% else %}
-                                    <span class="italic text-gray-400">Not Assigned</span>
-                                {% endif %}
-                                &nbsp;|&nbsp;
-                                Status: 
-                                {% if comment.candidate.follow_up_status %}
-                                    <span class="font-semibold">{{ comment.candidate.follow_up_status }}</span>
-                                {% else %}
-                                    <span class="italic text-gray-400">N/A</span>
-                                {% endif %}
-                            </div>
-                            <div class="mt-2 text-gray-800">{{ comment.comment }}</div>
-                            <div class="text-xs text-gray-500 mt-1">{{ comment.created_at|date:"d M Y H:i" }}</div>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endfor %}
-    {% else %}
-        <p class="text-gray-500 italic">No comments available.</p>
-    {% endif %}
-</div>
-{% endblock %} {% endcomment %}
-
-
-{% comment %} {% extends 'core/base.html' %}
-{% block content %}
-<h2 class="text-3xl font-bold mb-6 text-blue-800">📝 Candidate Comments</h2>
-
-{% for date, comments in grouped_comments.items %}
-  <div class="mb-6 bg-white shadow rounded-lg p-4">
-    <h3 class="text-xl font-semibold text-blue-700 mb-3">{{ date }}</h3>
-    <ul class="space-y-2">
-      {% for comment in comments %}
-        <li class="border-l-4 border-blue-500 pl-4 bg-blue-50 p-2 rounded">
-          <p><span class="font-semibold text-gray-700">Candidate:</span> {{ comment.candidate.name }}</p>
-          <p><span class="font-semibold text-gray-700">Volunteer:</span> {{ comment.volunteer.username }}</p>
-          <p><span class="font-semibold text-gray-700">Status:</span> {{ comment.text }}</p>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-{% empty %}
-  <p class="text-gray-500">No comments available.</p>
-{% endfor %}
-{% endblock %} {% endcomment %}

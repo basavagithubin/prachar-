@@ -58,6 +58,206 @@
             <td class="px-4 py-3">{{ candidate.phone }}</td>
             <td class="px-4 py-3">
               {% if candidate.phone %}
+              <a href="https://wa.me/{{ candidate.phone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" title="Chat on WhatsApp"
+   class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 hover:bg-green-200 text-green-600 shadow transition">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 448 512">
+    <path d="M380.9 97.1C339-5.6 241.6-32 160.9 19.1 102.3 55.4 65.9 121.4 64.4 192.5c-.4 24.8 3.9 49.3 12.5 72.3L45.6 439.1c-3.9 14.5 10.7 27.1 24.8 21.1l128.2-54.2c21.2 7.4 43.6 11.2 66.5 11.2 85.8 0 160.6-60.5 182.3-143.4 13.8-52.6 5.4-107.8-27.9-153.7zM224 372.6c-19.6 0-38.9-3.6-57.1-10.6l-8.3-3.2-76 32.2 21.4-77.2-3.4-8.5c-7.7-19.5-11.5-40.1-11.2-61.1 1.2-59.2 36.2-112.4 89.3-142.5 60.7-34.8 139.2-13.5 178.1 46.5 37.8 57.5 24.4 134.5-30.4 175.4-28.1 21.2-62.7 32.3-102.4 32.3z"/>
+  </svg>
+</a>
+
+
+              {% comment %} <a href="https://wa.me/{{ candidate.phone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-green-600 text-xl">📱</a> {% endcomment %}
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">{{ candidate.registration_date|date:"M d, Y" }}</td>
+            <td class="px-4 py-3">{{ candidate.mother_tongue }}</td>
+            <td class="px-4 py-3">
+              {% if candidate.assigned_volunteer %}
+              <span class="text-green-700 font-medium">{{ candidate.assigned_volunteer.name }}</span>
+              {% else %}<span class="text-gray-400 italic">Not Assigned</span>{% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <form method="POST">{% csrf_token %}
+                <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
+                <select name="volunteer_id" class="border border-orange-300 rounded px-2 py-1 text-sm w-full">
+                  <option value="">Select</option>
+                  {% for volunteer in volunteers %}
+                  <option value="{{ volunteer.id }}">{{ volunteer.name }}</option>
+                  {% endfor %}
+                </select>
+                <button class="w-full mt-1 bg-orange-600 text-white py-1 rounded hover:bg-orange-700 text-xs">Assign</button>
+              </form>
+            </td>
+            <td class="px-4 py-3">
+              {% if candidate.attended %}
+              <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">✔ Attended</span>
+              {% else %}
+              <form method="POST">{% csrf_token %}
+                <input type="hidden" name="attendance_candidate_id" value="{{ candidate.id }}">
+                <button class="bg-green-600 text-white px-3 py-1 text-xs rounded hover:bg-green-700">Mark</button>
+              </form>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if candidate.followed_up %}
+              <span class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">✔ Followed-Up</span>
+              {% else %}
+              <form method="POST">{% csrf_token %}
+                <input type="hidden" name="follow_up_candidate_id" value="{{ candidate.id }}">
+                <button class="bg-blue-600 text-white px-3 py-1 text-xs rounded hover:bg-blue-700">Mark</button>
+              </form>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <form method="POST" class="space-y-1">{% csrf_token %}
+                <input type="hidden" name="follow_up_status_candidate_id" value="{{ candidate.id }}">
+                <select name="follow_up_status" class="border border-orange-300 rounded px-2 py-1 text-xs w-full">
+                  <option value="">Status</option>
+                  {% for key, label in follow_up_status_choices %}
+                  <option value="{{ key }}" {% if candidate.follow_up_status == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <input type="date" name="follow_up_status_date" value="{{ candidate.follow_up_status_date|date:'Y-m-d' }}" class="w-full border border-orange-300 rounded px-2 py-1 text-xs">
+                <button class="bg-blue-700 hover:bg-blue-800 text-white px-2 py-1 w-full rounded text-xs">Update</button>
+              </form>
+            </td>
+            <td class="px-4 py-3">
+              <form method="POST">{% csrf_token %}
+                <input type="hidden" name="level_candidate_id" value="{{ candidate.id }}">
+                <select name="level" class="border border-orange-300 rounded px-2 py-1 text-xs w-full">
+                  <option value="">Level</option>
+                  <option value="L1" {% if candidate.level == "L1" %}selected{% endif %}>L1</option>
+                  <option value="L2" {% if candidate.level == "L2" %}selected{% endif %}>L2</option>
+                  <option value="L3" {% if candidate.level == "L3" %}selected{% endif %}>L3</option>
+                  <option value="L4" {% if candidate.level == "L4" %}selected{% endif %}>L4</option>
+                </select>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 mt-1 w-full rounded text-xs">Update</button>
+              </form>
+            </td>
+            <td class="px-4 py-3">
+              <button onclick="openDeleteModal({{ candidate.id }}, '{{ candidate.name }}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs">Delete</button>
+              <a href="{% url 'candidate_detail' candidate.id %}" title="View Details" class="block text-xs text-orange-600 mt-1 hover:underline">👁 View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="13" class="text-center text-gray-400 py-6 italic">🙏 No candidates found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="flex justify-center mt-8 space-x-2">
+        {% if candidates.has_previous %}
+          <a href="?{% if query %}search={{ query }}&{% endif %}page=1" class="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200">« First</a>
+          <a href="?{% if query %}search={{ query }}&{% endif %}page={{ candidates.previous_page_number }}" class="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200">‹ Prev</a>
+        {% endif %}
+        <span class="px-4 py-1 bg-orange-500 text-white rounded">Page {{ candidates.number }} of {{ candidates.paginator.num_pages }}</span>
+        {% if candidates.has_next %}
+          <a href="?{% if query %}search={{ query }}&{% endif %}page={{ candidates.next_page_number }}" class="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200">Next ›</a>
+          <a href="?{% if query %}search={{ query }}&{% endif %}page={{ candidates.paginator.num_pages }}" class="px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200">Last »</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Footer Links -->
+    <div class="mt-10 flex justify-end gap-4">
+      <a href="{% url 'deleted_candidates' %}" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg shadow">🗑 Deleted</a>
+      <a href="{% url 'follow_up_report' %}" class="bg-orange-700 hover:bg-orange-800 text-white px-6 py-2 rounded-lg shadow">📘 Follow-Up Report</a>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center">
+  <div class="bg-white rounded-lg p-6 w-96 shadow-lg">
+    <h2 class="text-xl font-bold text-red-700 mb-4">⚠ Confirm Deletion</h2>
+    <p class="mb-4 text-gray-700">Do you want to delete <span id="candidateName" class="font-semibold text-orange-600"></span>?</p>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="delete_candidate_id" id="deleteCandidateId">
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeDeleteModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">Cancel</button>
+        <button name="delete_soft" value="1" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">Delete</button>
+        <button name="delete_permanent" value="1" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete Permanently</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openDeleteModal(candidateId, candidateName) {
+    document.getElementById('deleteCandidateId').value = candidateId;
+    document.getElementById('candidateName').innerText = candidateName;
+    document.getElementById('deleteModal').classList.remove('hidden');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+  }
+</script>
+{% endblock %}
+{% comment %} {% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-yellow-100 via-white to-orange-100 px-6 py-12">
+  <div class="max-w-[95rem] mx-auto">
+    <h1 class="text-5xl font-bold text-center text-orange-700 mb-12 drop-shadow-sm tracking-tight">
+      📖 FOE Registration Dashboard
+    </h1>
+
+    <!-- Search and Download Bar -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
+      <form method="GET" class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <input
+          type="text"
+          name="search"
+          value="{{ request.GET.search }}"
+          placeholder="🔍 Search name, phone, volunteer..."
+          class="w-full sm:w-96 px-6 py-3 rounded-lg border border-orange-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+        />
+        <button
+          type="submit"
+          class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold shadow"
+        >
+          Search
+        </button>
+      </form>
+      <a href="{% url 'export_candidates_excel' %}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow font-medium">
+        ⬇️ Download Excel
+      </a>
+    </div>
+
+    <!-- Table View -->
+    <div class="overflow-x-auto bg-white border border-orange-200 rounded-xl shadow">
+      <table class="w-full text-sm text-gray-800">
+        <thead class="text-xs uppercase bg-orange-100 text-orange-900">
+          <tr class="text-center">
+            <th class="px-4 py-4">Name</th>
+            <th class="px-4 py-4">Email</th>
+            <th class="px-4 py-4">Phone</th>
+            <th class="px-4 py-4">WhatsApp</th>
+            <th class="px-4 py-4">Reg. Date</th>
+            <th class="px-4 py-4">Language</th>
+            <th class="px-4 py-4">Volunteer</th>
+            <th class="px-4 py-4">Assign Volunteer</th>
+            <th class="px-4 py-4">Attendance</th>
+            <th class="px-4 py-4">Follow-Up</th>
+            <th class="px-4 py-4">Status</th>
+            <th class="px-4 py-4">Level</th>
+            <th class="px-4 py-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-orange-50">
+          {% for candidate in candidates %}
+          <tr class="hover:bg-orange-50 transition text-center">
+            <td class="px-4 py-3 font-semibold text-left">{{ candidate.name }}</td>
+            <td class="px-4 py-3 truncate max-w-[180px]" title="{{ candidate.email }}">{{ candidate.email }}</td>
+            <td class="px-4 py-3">{{ candidate.phone }}</td>
+            <td class="px-4 py-3">
+              {% if candidate.phone %}
               <a href="https://wa.me/{{ candidate.phone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-green-600 text-xl">📱</a>
               {% endif %}
             </td>
@@ -169,4 +369,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% endblock %} {% endcomment %}

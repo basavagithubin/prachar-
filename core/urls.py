@@ -43,6 +43,7 @@ urlpatterns = [
     path('compose-sms/', views.compose_sms, name='compose_sms'),
 
     path('export-excel/', views.export_candidates_excel, name='export_candidates_excel'),
+    path('attendance/reset/', views.reset_attendance, name='reset_attendance'),
 
 ]
 

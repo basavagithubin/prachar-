@@ -1,4 +1,89 @@
 {% extends 'core/base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 mt-10">
+
+  <div class="text-center mb-10">
+    <h2 class="text-3xl font-extrabold text-orange-800 mb-2">📅 Attendance Records by Date</h2>
+    <p class="text-yellow-600 italic">
+      "Work done with anxiety about results is far inferior to work done without such anxiety." — Bhagavad Gita 2.49
+    </p>
+
+    <!-- Excel Download -->
+    <a href="?export=excel" class="inline-block mt-4 px-6 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded shadow transition">
+      ⬇️ Download Excel Report
+    </a>
+
+    <!-- 🔁 Reset Button -->
+    <form id="resetForm" method="POST" action="{% url 'reset_attendance' %}" class="inline-block ml-4">
+      {% csrf_token %}
+      <button type="button" onclick="confirmReset()" class="px-6 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded shadow transition">
+        🔁 Reset Attendance
+      </button>
+    </form>
+  </div>
+
+  {% if grouped_attendance %}
+    <div class="space-y-6">
+      {% for date, records in grouped_attendance %}
+        <div class="border border-yellow-200 rounded-xl shadow-md bg-yellow-50">
+          <button 
+            type="button"
+            class="w-full text-left px-6 py-4 text-lg font-semibold text-orange-800 hover:bg-yellow-100 focus:outline-none transition"
+            onclick="toggleSection('{{ date }}')"
+          >
+            📆 {{ date|date:"d M Y" }} — 
+            <span class="text-sm text-gray-600">{{ records|length }} present</span>
+          </button>
+
+          <div id="section-{{ date }}" class="hidden px-6 pb-4">
+            <div class="overflow-x-auto rounded-lg shadow">
+              <table class="w-full mt-2 table-auto bg-white border border-gray-200 rounded-lg">
+                <thead class="bg-orange-600 text-white text-sm">
+                  <tr>
+                    <th class="px-4 py-2 text-left">#</th>
+                    <th class="px-4 py-2 text-left">Candidate Name</th>
+                    <th class="px-4 py-2 text-left">Phone</th>
+                    <th class="px-4 py-2 text-left">Marked At</th>
+                  </tr>
+                </thead>
+                <tbody class="text-gray-800 text-sm divide-y divide-gray-100">
+                  {% for record in records %}
+                    <tr class="hover:bg-orange-50 transition">
+                      <td class="px-4 py-2">{{ forloop.counter }}</td>
+                      <td class="px-4 py-2">{{ record.candidate.name }}</td>
+                      <td class="px-4 py-2">{{ record.candidate.phone }}</td>
+                      <td class="px-4 py-2 text-gray-600">{{ record.timestamp|date:"h:i A" }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-center text-gray-500 italic">No attendance records available yet.</p>
+  {% endif %}
+</div>
+
+<!-- Scripts -->
+<script>
+  function toggleSection(date) {
+    const section = document.getElementById(`section-${date}`);
+    section.classList.toggle('hidden');
+  }
+
+  function confirmReset() {
+    if (confirm("⚠️ Are you sure you want to reset all attendance records? This action cannot be undone.")) {
+      document.getElementById("resetForm").submit();
+    }
+  }
+</script>
+{% endblock %}
+
+
+{% comment %} {% extends 'core/base.html' %}
 
 {% block content %}
 <div class="container mx-auto px-4 mt-10">
@@ -34,7 +119,7 @@
                     <th class="px-4 py-2 text-left">Candidate Name</th>
                     <th class="px-4 py-2 text-left">Phone</th>
                     {% comment %} <th class="px-4 py-2 text-left">Status</th> {% endcomment %}
-                    <th class="px-4 py-2 text-left">Marked At</th>
+                    {% comment %} <th class="px-4 py-2 text-left">Marked At</th>
                   </tr>
                 </thead>
                 <tbody class="text-gray-800 text-sm divide-y divide-gray-100">
@@ -42,7 +127,7 @@
                   <tr class="hover:bg-orange-50 transition">
                     <td class="px-4 py-2">{{ forloop.counter }}</td>
                     <td class="px-4 py-2">{{ record.candidate.name }}</td>
-                    <td class="px-4 py-2">{{ record.candidate.phone }}</td>
+                    <td class="px-4 py-2">{{ record.candidate.phone }}</td> {% endcomment %}
                     {% comment %} <td class="px-4 py-2">
                       {% if record.status == 'present' %}
                         <span class="text-green-600 font-semibold">✅ Present</span>
@@ -50,7 +135,7 @@
                         <span class="text-red-600 font-semibold">❌ Absent</span>
                       {% endif %}
                     </td> {% endcomment %}
-                    <td class="px-4 py-2 text-gray-600">
+                    {% comment %} <td class="px-4 py-2 text-gray-600">
                       {{ record.timestamp|date:"h:i A" }}
                     </td>
                   </tr>
@@ -65,16 +150,23 @@
   {% else %}
     <p class="text-center text-gray-500 italic">No attendance records available yet.</p>
   {% endif %}
-</div>
+</div> {% endcomment %}
 
 <!-- Accordion Toggle Script -->
-<script>
+{% comment %} <script>
   function toggleSection(date) {
     const section = document.getElementById(`section-${date}`);
     section.classList.toggle('hidden');
   }
 </script>
-{% endblock %}
+{% endblock %} {% endcomment %}
+
+
+
+
+
+
+
 {% comment %} {% extends 'core/base.html' %}
 
 {% block content %}

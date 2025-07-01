@@ -1,6 +1,182 @@
 {% load static %}
 
 <!DOCTYPE html>
+<html lang="en" class="scroll-smooth" id="html-root">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Candidate Management</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background-color: #F6B53B; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+
+<body class="bg-yellow-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
+
+{% if user.is_authenticated %}
+<header class="bg-orange-700 shadow-lg sticky top-0 z-50">
+  <nav class="container mx-auto flex flex-wrap md:flex-nowrap items-center justify-between px-6 py-4 gap-4">
+    <a href="{% url 'dashboard' %}" class="text-3xl font-bold font-serif text-yellow-100 tracking-wide drop-shadow">🚢Prachar</a>
+
+    <!-- Desktop Navigation -->
+    <div class="hidden md:flex flex-wrap md:flex-nowrap items-center justify-end gap-4 w-full md:w-auto overflow-x-auto">
+      <a href="{% url 'dashboard' %}" class="navlink {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+      <a href="{% url 'register_candidate' %}" class="navlink {% if request.resolver_match.url_name == 'register_candidate' %}active{% endif %}">Register</a>
+      <a href="{% url 'manage_volunteers' %}" class="navlink {% if request.resolver_match.url_name == 'manage_volunteers' %}active{% endif %}">Volunteers</a>
+      <a href="{% url 'attendance_list' %}" class="navlink {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}">Attendance</a>
+      <a href="{% url 'follow_up_report' %}" class="navlink {% if request.resolver_match.url_name == 'follow_up_report' %}active{% endif %}">Report</a>
+      <a href="{% url 'compose_email' %}" class="navlink {% if request.resolver_match.url_name == 'compose_email' %}active{% endif %}">Email</a>
+      <a href="{% url 'compose_sms' %}" class="navlink {% if request.resolver_match.url_name == 'compose_sms' %}active{% endif %}">SMS</a>
+      <a href="{% url 'comments' %}" class="navlink {% if request.resolver_match.url_name == 'comments' %}active{% endif %}">Comments</a>
+
+      <!-- Theme Toggle -->
+      <button id="theme-toggle" class="px-3 py-1 bg-yellow-300 dark:bg-gray-700 text-gray-800 dark:text-yellow-100 rounded-full hover:bg-yellow-400 dark:hover:bg-gray-600 transition text-sm">
+        Toggle Theme
+      </button>
+
+      <!-- Logout -->
+      <form action="{% url 'logout' %}" method="post" class="ml-2">
+        {% csrf_token %}
+        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition shadow text-sm font-semibold">Logout</button>
+      </form>
+    </div>
+
+    <!-- Mobile Menu Button -->
+    <div class="md:hidden">
+      <button id="mobile-menu-button" class="text-yellow-100 focus:outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden md:hidden bg-orange-700 px-6 py-4 space-y-2">
+    <a href="{% url 'dashboard' %}" class="mobilelink {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+    <a href="{% url 'register_candidate' %}" class="mobilelink {% if request.resolver_match.url_name == 'register_candidate' %}active{% endif %}">Register</a>
+    <a href="{% url 'manage_volunteers' %}" class="mobilelink {% if request.resolver_match.url_name == 'manage_volunteers' %}active{% endif %}">Volunteers</a>
+    <a href="{% url 'attendance_list' %}" class="mobilelink {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}">Attendance</a>
+    <a href="{% url 'follow_up_report' %}" class="mobilelink {% if request.resolver_match.url_name == 'follow_up_report' %}active{% endif %}">Report</a>
+    <a href="{% url 'compose_email' %}" class="mobilelink {% if request.resolver_match.url_name == 'compose_email' %}active{% endif %}">Email</a>
+    <a href="{% url 'compose_sms' %}" class="mobilelink {% if request.resolver_match.url_name == 'compose_sms' %}active{% endif %}">SMS</a>
+    <a href="{% url 'comments' %}" class="mobilelink {% if request.resolver_match.url_name == 'comments' %}active{% endif %}">Comments</a>
+
+    <!-- Theme Toggle Mobile -->
+    <button id="theme-toggle-mobile" class="w-full px-3 py-2 bg-yellow-300 dark:bg-gray-700 text-gray-800 dark:text-yellow-100 rounded-md hover:bg-yellow-400 dark:hover:bg-gray-600 transition font-semibold">
+      Toggle Theme
+    </button>
+
+    <!-- Logout -->
+    <form action="{% url 'logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" class="w-full px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition font-semibold">Logout</button>
+    </form>
+  </div>
+</header>
+{% else %}
+<!-- Guest Navbar -->
+<header class="bg-orange-700 shadow-md sticky top-0 z-50">
+  <nav class="container mx-auto flex items-center justify-between px-6 py-4">
+    <a href="#" class="text-yellow-100 text-xl font-bold">🚢 Prachar</a>
+    <div class="flex items-center gap-4">
+      <button id="theme-toggle" class="px-3 py-1 bg-yellow-300 dark:bg-gray-700 text-gray-800 dark:text-yellow-100 rounded-full hover:bg-yellow-400 dark:hover:bg-gray-600 transition text-sm">Toggle Theme</button>
+      <a href="{% url 'login' %}" class="text-yellow-100 font-semibold hover:underline">Login</a>
+    </div>
+  </nav>
+</header>
+{% endif %}
+
+<main class="container mx-auto px-6 py-8 min-h-[calc(100vh-80px)]">
+  {% block content %}{% endblock %}
+</main>
+
+<script>
+  // Mobile menu toggle
+  const menuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (menuButton) {
+    menuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+
+  // 🌗 Theme toggle logic
+  const htmlRoot = document.getElementById('html-root');
+  const themeButtons = document.querySelectorAll('#theme-toggle, #theme-toggle-mobile');
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      htmlRoot.classList.add('dark');
+    } else {
+      htmlRoot.classList.remove('dark');
+    }
+  }
+
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  applyTheme(savedTheme);
+
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newTheme = htmlRoot.classList.contains('dark') ? 'light' : 'dark';
+      applyTheme(newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
+  });
+</script>
+
+<!-- Utility Classes -->
+<style>
+  .navlink {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    transition: all 0.2s;
+    color: #FFFBEB;
+    white-space: nowrap;
+  }
+  .navlink:hover {
+    background-color: #EA580C;
+    color: #ffffff;
+  }
+  .navlink.active {
+    background-color: #FDE68A;
+    color: #7C2D12;
+    font-weight: bold;
+  }
+  .mobilelink {
+    display: block;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    color: #FFFBEB;
+    transition: all 0.2s;
+  }
+  .mobilelink:hover {
+    background-color: #EA580C;
+    color: #ffffff;
+  }
+  .mobilelink.active {
+    background-color: #FCD34D;
+    color: #7C2D12;
+    font-weight: bold;
+  }
+</style>
+
+</body>
+</html>
+
+{% comment %} {% load static %}
+
+<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
@@ -147,7 +323,7 @@
 </style>
 
 </body>
-</html>
+</html> {% endcomment %}
 {% comment %} {% load static %}
 
 <!DOCTYPE html>
