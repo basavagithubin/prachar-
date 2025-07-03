@@ -1,6 +1,173 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
+<div class="max-w-7xl mx-auto mt-12 grid grid-cols-1 lg:grid-cols-3 gap-10 px-6">
+
+  <!-- Recent Activity Panel -->
+  <aside class="col-span-1 bg-white border border-gray-200 rounded-2xl shadow-md p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+      <svg class="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+           viewBox="0 0 24 24"><path d="M3 10h18M3 6h18M3 14h18M3 18h18" /></svg>
+      Recent Activity
+    </h2>
+    <ul class="space-y-5 max-h-[600px] overflow-y-auto custom-scrollbar">
+      {% for log in recent_logs %}
+        <li class="p-4 rounded-lg bg-gray-50 hover:bg-orange-50 transition border border-gray-100">
+          <div class="font-semibold text-orange-700">{{ log.candidate.name }}</div>
+          <div class="text-sm text-gray-600">Subject: <span class="italic">{{ log.subject }}</span></div>
+          <div class="text-xs text-gray-500">{{ log.sent_at|date:"M d, Y h:i A" }}</div>
+        </li>
+      {% empty %}
+        <li class="text-gray-600">No recent emails sent.</li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <!-- Compose Email Form -->
+  <section class="col-span-2 bg-gradient-to-br from-orange-50 via-white to-yellow-50 border border-yellow-200 p-8 rounded-2xl shadow-xl">
+    <h1 class="text-4xl font-extrabold text-orange-800 mb-8 text-center font-serif drop-shadow-md">📧 Compose Email</h1>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Subject -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-800 mb-2">Subject</label>
+        <input type="text" name="subject" required
+               class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-yellow-100 focus:ring-2 focus:ring-orange-400 focus:outline-none shadow-sm" />
+      </div>
+
+      <!-- Message -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-800 mb-2">Message</label>
+        <textarea name="body" rows="6" required
+                  class="w-full px-4 py-2 rounded-lg border border-gray-300 bg-yellow-100 focus:ring-2 focus:ring-orange-400 focus:outline-none shadow-sm resize-none"></textarea>
+      </div>
+
+      <!-- Attachments -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-800 mb-2">Attach Files</label>
+        <input type="file" name="attachments" multiple
+               accept="image/*,audio/*,video/*"
+               class="w-full px-4 py-2 border border-dashed border-orange-300 rounded-lg bg-white text-gray-700 shadow-sm" />
+        <p class="text-xs text-gray-500 mt-1">Supported: Images, Audio, Videos. You can attach multiple files.</p>
+      </div>
+
+      <!-- Submit -->
+      <div class="text-right">
+        <button type="submit"
+                class="inline-flex items-center px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg shadow transition">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+               viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          Send Email
+        </button>
+      </div>
+    </form>
+
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mt-6 space-y-3">
+        {% for message in messages %}
+          <div class="p-4 rounded-lg border-l-4
+            {% if message.tags == 'success' %}
+              border-green-600 bg-green-50 text-green-800
+            {% elif message.tags == 'error' %}
+              border-red-600 bg-red-50 text-red-800
+            {% else %}
+              border-yellow-500 bg-yellow-100 text-yellow-900
+            {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+/* Optional: Custom scrollbar for recent activity */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #f59e0b;
+  border-radius: 6px;
+}
+</style>
+{% endblock %}
+
+
+{% comment %} {% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-10 p-8 bg-gradient-to-br from-orange-50 via-white to-yellow-50 rounded-2xl shadow-lg border border-orange-200">
+  <h1 class="text-3xl font-extrabold text-yellow-900 mb-6 text-center">📧 Compose Email</h1>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-semibold text-indigo-900 mb-1">Subject</label>
+      <input type="text" name="subject" required
+             class="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:outline-none bg-yellow-50 text-gray-800" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-indigo-900 mb-1">Message</label>
+      <textarea name="body" rows="6" required
+                class="w-full px-4 py-2 border border-orange-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none bg-yellow-50 text-gray-800"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-indigo-900 mb-1">Attach Image/Audio/Video</label>
+      <input type="file" name="attachments" multiple
+             accept="image/*,audio/*,video/*"
+             class="w-full px-4 py-2 border border-dashed border-orange-400 rounded-lg bg-yellow-100 text-gray-800" />
+      <p class="text-xs text-orange-600 mt-1">You can upload multiple files.</p>
+    </div>
+
+    <div class="text-right">
+      <button type="submit"
+              class="inline-flex items-center bg-orange-600 text-white font-semibold px-6 py-2 rounded-lg shadow hover:bg-orange-700 transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+        Send Email
+      </button>
+    </div>
+  </form>
+
+  {% if messages %}
+    <div class="mt-6 space-y-3">
+      {% for message in messages %}
+        <div class="p-4 rounded-md border-l-4 
+          {% if message.tags == 'success' %}
+            border-green-600 bg-green-50 text-green-800
+          {% elif message.tags == 'error' %}
+            border-red-600 bg-red-50 text-red-800
+          {% else %}
+            border-yellow-600 bg-yellow-100 text-yellow-900
+          {% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %} {% endcomment %}
+
+
+
+
+
+
+{% comment %} {% extends 'core/base.html' %}
+
+{% block content %}
 <div class="max-w-3xl mx-auto mt-10 p-8 bg-gradient-to-br from-orange-50 via-white to-yellow-50 rounded-2xl shadow-lg border border-orange-200">
   <h1 class="text-3xl font-extrabold text-yellow-900 mb-6 text-center">📧 Compose Email</h1>
 
@@ -48,78 +215,5 @@
     </div>
   {% endif %}
 </div>
-{% endblock %}
-{% comment %} {% extends 'core/base.html' %}
-
-{% block content %}
-<div class="max-w-3xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
-  <h1 class="text-3xl font-extrabold text-blue-700 mb-6">📧 Compose Email</h1>
-
-  <form method="post" class="space-y-6">
-    {% csrf_token %}
-    
-    <div>
-      <label class="block text-sm font-semibold text-gray-600 mb-1">Subject</label>
-      <input type="text" name="subject" required
-             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-    </div>
-
-    <div>
-      <label class="block text-sm font-semibold text-gray-600 mb-1">Message</label>
-      <textarea name="body" rows="6" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
-    </div>
-
-    <div class="text-right">
-      <button type="submit"
-              class="inline-flex items-center bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow hover:bg-blue-700 transition">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
-             viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-        </svg>
-        Send Email
-      </button>
-    </div>
-  </form>
-
-  {% if messages %}
-    <div class="mt-6 space-y-3">
-      {% for message in messages %}
-        <div class="p-4 rounded-md border-l-4 {% if message.tags == 'success' %}border-green-500 bg-green-50 text-green-800{% elif message.tags == 'error' %}border-red-500 bg-red-50 text-red-800{% else %}border-gray-500 bg-gray-100 text-gray-800{% endif %}">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-</div>
 {% endblock %} {% endcomment %}
-{% comment %} {% extends 'core/base.html' %}
 
-{% block content %}
-<h1 class="text-2xl font-bold mb-4">Compose Email</h1>
-
-<form method="post" class="space-y-4">
-  {% csrf_token %}
-  <div>
-    <label class="block text-gray-700 font-medium">Subject</label>
-    <input type="text" name="subject" required class="w-full p-2 border border-gray-300 rounded" />
-  </div>
-  <div>
-    <label class="block text-gray-700 font-medium">Message</label>
-    <textarea name="body" required rows="6" class="w-full p-2 border border-gray-300 rounded"></textarea>
-  </div>
-  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-    Send Email
-  </button>
-</form>
-
-{% if messages %}
-  <div class="mt-6">
-    {% for message in messages %}
-      <div class="p-3 rounded {{ message.tags }} bg-gray-100 border">
-        {{ message }}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-{% endblock %} {% endcomment %}

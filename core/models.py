@@ -126,6 +126,18 @@ class EmailLog(models.Model):
     class Meta:
         ordering = ['-sent_at']
 
+# class EmailLog(models.Model):
+#     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='email_logs')
+#     subject = models.CharField(max_length=255)
+#     message = models.TextField()
+#     sent_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return f"Email to {self.candidate.name} at {self.sent_at.strftime('%Y-%m-%d %H:%M')}"
+
+#     class Meta:
+#         ordering = ['-sent_at']
+
 class SMSLog(models.Model):
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='sms_logs')
     message = models.TextField()
