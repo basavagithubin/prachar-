@@ -14,22 +14,10 @@ import django
 django.setup()
 
 from django.core.wsgi import get_wsgi_application
-from django.http import HttpRequest, HttpResponse
 
-# Get the WSGI application
-wsgi_app = get_wsgi_application()
+# Export WSGI application for Vercel
+app = get_wsgi_application()
 
-def handler(request):
-    """
-    Vercel serverless function handler for Django.
-    Converts Vercel's request format to WSGI format.
-    """
-    # Import here to avoid import errors before Django setup
-    from asgiref.wsgi import WsgiToAsgi
-    
-    # Convert WSGI to ASGI for better compatibility
-    asgi_app = WsgiToAsgi(wsgi_app)
-    
-    # Return the WSGI app result
-    return wsgi_app
+# For compatibility
+application = app
 
