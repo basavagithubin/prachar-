@@ -10,9 +10,12 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     '.vercel.app',
+    '.render.com',
+    '.onrender.com',
     os.getenv('VERCEL_URL', ''),
+    os.getenv('RENDER_EXTERNAL_URL', ''),
 ]
-ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h and h.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
