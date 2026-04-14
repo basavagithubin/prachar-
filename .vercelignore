@@ -1,0 +1,16 @@
+.git
+.gitignore
+*.pyc
+__pycache__
+*.egg-info
+.env
+.env.local
+db.sqlite3
+venv
+env
+.vscode
+.DS_Store
+node_modules
+*.log
+.pytest_cache
+**/migrations/
